@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prestamos de documentos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="#">Consulta y reporte</a></li>
+                    <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <h1>Prestamos de documentos</h1>
+        <p class="subtitle">Gestion y registro de documentos</p>
+
+        <!-- Formulario -->
+        <div class="form-card">
+            <h2>Registrar prestamo</h2>
+            
+            <!-- Contenedor para mensajes del sistema (Oculto por defecto con d-none) -->
+            <div id="alertSistema" class="alert-box d-none">
+                <span id="alertTexto"></span>
+                <button type="button" onclick="ocultarAlertaSistema()" class="btn-close-alert">&times;</button>
+            </div>
+
+<form id="prestamoForm">
+    <input type="hidden" id="idPrestamo" value="">
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="solicitante">Solicitante (Usuario) <span class="required">*</span></label>
+            <select id="solicitante" name="solicitante" required>
+                <option value="">Seleccione un usuario...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="matriculaSelect">Buscar por expediente (No. trabajador) <span class="required">*</span></label>
+            <select id="matriculaSelect" name="matriculaSelect" required>
+                <option value="">Seleccione matrícula...</option>
+            </select>
+        </div>
+
+        <!-- Separador "o" entre las dos formas de buscar -->
+        <div class="separador-o">o</div>
+
+        <div class="form-group">
+            <label for="trabajadorSelect">Buscar por nombre de trabajador <span class="required">*</span></label>
+            <select id="trabajadorSelect" name="trabajadorSelect" required>
+                <option value="">Seleccione trabajador...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+            <label for="estanteCajaInfo">Ubicación Física (Estante y Caja)</label>
+            <input type="text" id="estanteCajaInfo" readonly placeholder="" style="background-color: #e9ecef; cursor: not-allowed;">
+        </div>
+        <div class="form-group">
+            <!-- Ya no lleva asterisco ni required: se llena sola y no se puede editar -->
+            <label for="fechaPrestamo">Fecha de prestamo</label>
+            <input type="date" id="fechaPrestamo" name="fechaPrestamo" readonly>
+        </div>
+        <div class="form-group">
+            <label for="fechaEntrega">Fecha limite a entregar <span class="required">*</span></label>
+            <input type="date" id="fechaEntrega" name="fechaEntrega" required>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+        <!-- Cambió de type="reset" a type="button" -->
+        <button type="button" class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+        <!-- Empieza deshabilitado -->
+        <button type="submit" class="btn btn-registrar" id="btnRegistrar" disabled>Registrar</button>
+    </div>
+</form>
+        <!-- Listado -->
+        <div class="table-card">
+            <div class="table-header-title">LISTADO DE DOCUMENTOS</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Expediente</th>
+                            <th>Trabajador</th>
+                            <th>Fecha prestamo</th>
+                            <th>Fecha entrega</th>
+                            <th>Solicitante</th>
+                            <th style="text-align: center;">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prestamosTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación (Oculto por defecto con d-none) -->
+    <div id="modalConfirmacion" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h3>Confirmación del Sistema</h3>
+            <p id="modalMensaje">¿Estás seguro de realizar esta acción?</p>
+            <div class="modal-actions">
+                <button type="button" id="btnModalCancelar" class="btn btn-cancel">Cancelar</button>
+                <button type="button" id="btnModalAceptar" class="btn btn-registrar">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+    <script src="prestamo.js"></script>
+</body>
+</html>

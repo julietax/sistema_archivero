@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Usuarios</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- FontAwesome para el ícono del ojito -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                    <li><a href="#">Consulta y reporte</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="#">Consulta y reporte</a></li>
+                    <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <h1>Registro de usuarios</h1>
+        <p class="subtitle">Ingresa los datos del nuevo usuario</p>
+
+        <div class="form-card">
+    <h2>Registrar usuario</h2>
+    <form id="userForm">
+        <input type="hidden" id="idUsuarios" value="">
+        
+        <!-- Fila 1: Nombre / Apellido Paterno -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nombre">Nombre <span class="required">*</span></label>
+                <input type="text" id="nombre" name="nombre" maxlength="30" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras y espacios" required placeholder="Ingresa el nombre">
+            </div>
+            <div class="form-group">
+                <label for="apellidoPaterno">Apellido paterno <span class="required">*</span></label>
+                <input type="text" id="apellidoPaterno" name="apellidoPaterno" maxlength="30" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras y espacios" required placeholder="Apellido paterno">
+            </div>
+        </div>
+
+        <!-- Fila 2: Apellido Materno / Rol -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="apellidoMaterno">Apellido materno</label>
+                <input type="text" id="apellidoMaterno" name="apellidoMaterno" maxlength="30" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*" title="Solo se permiten letras y espacios" placeholder="Apellido materno">
+            </div>
+            <div class="form-group">
+                <label for="rolesIdRoles">Rol <span class="required">*</span></label>
+                <select id="rolesIdRoles" name="rolesIdRoles" required disabled>
+                    <option value="">Seleccione un rol... (Primero ingresa el nombre)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Fila 3: Correo electrónico / Contraseña -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="correo">Correo electrónico <span class="required">*</span></label>
+                <input type="email" id="correo" name="correo" maxlength="50" required placeholder="ejemplo@correo.com">
+            </div>
+            <div class="form-group">
+                <label for="contrasena">Contraseña <span class="required">*</span> <small style="font-weight:normal; color:#555;">(Máx. 12 caracteres)</small></label>
+                <div class="password-wrapper">
+                    <input type="password" id="contrasena" name="contrasena" maxlength="12" required>
+                    <i class="fa-solid fa-eye-slash" id="togglePassword" title="Mostrar/Ocultar contraseña"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+            <button type="reset" class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+            <button type="submit" class="btn btn-guardar" id="btnGuardar" disabled>Guardar</button>
+        </div>
+    </form>
+</div>
+
+        <div class="table-card">
+    <div class="table-header-title">LISTADO DE USUARIOS</div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre Completo</th>
+                    <th>Correo electrónico</th> <!-- NUEVA COLUMNA -->
+                    <th>Rol</th>
+                    <th style="text-align: center;">Edit</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+    <script src="sidebar.js"></script>
+    <script src="ui-sistema.js"></script>
+    <script src="CRUDusuario.js"></script>
+</body>
+</html>

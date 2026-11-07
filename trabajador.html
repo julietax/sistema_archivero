@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Trabajadores</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- BOTÓN Y MENÚ LATERAL -->
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                    <li><a href="#">Consulta y reporte</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="#">Consulta y reporte</a></li>
+                    <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <h1>Gestión de Trabajadores</h1>
+        <p class="subtitle">Ingresa los datos del trabajador</p>
+
+       <!-- form -->
+        <div class="form-card">
+            <h2>FORMULARIO DE TRABAJADORES (Nuevo/Editar)</h2>
+            <form id="workerForm">
+                <input type="hidden" id="idTrabajadores" value="">
+
+                <!-- Fila 1: Nombre(s) y Apellido paterno -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nombre">Nombre(s) <span class="required">*</span></label>
+                        <input type="text" id="nombre" name="nombre" maxlength="25" required placeholder="Nombre(s)">
+                    </div>
+                    <div class="form-group">
+                        <label for="apellidoPaterno">Apellido paterno <span class="required">*</span></label>
+                        <input type="text" id="apellidoPaterno" name="apellidoPaterno" maxlength="25" required placeholder="Apellido paterno">
+                    </div>
+                </div>
+
+                <!-- Fila 2: Apellido materno y Núm. Trabajador -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="apellidoMaterno">Apellido materno</label>
+                        <input type="text" id="apellidoMaterno" name="apellidoMaterno" maxlength="25" placeholder="Apellido materno">
+                    </div>
+                    <div class="form-group">
+                        <label for="noTrabajador">Núm. Trabajador <span class="required">*</span></label>
+                        <input type="text" id="noTrabajador" name="noTrabajador" minlength="4" maxlength="4" inputmode="numeric" placeholder="0000" required>
+                    </div>
+                </div>
+
+                <!-- Fila 3: Departamento y Fecha ingreso -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="departamento">Departamento <span class="required">*</span></label>
+                        <select id="departamento" name="departamento" required>
+                            <option value="">Seleccione un departamento...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fechaIngreso">Fecha ingreso <span class="required">*</span></label>
+                        <input type="date" id="fechaIngreso" name="fechaIngreso" required>
+                    </div>
+                </div>
+
+                <!-- Fila 4: Estatus (equilibrado con un grupo vacío o alineado) -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="estatus">Estatus <span class="required">*</span></label>
+                        <select id="estatus" name="estatus" required>
+                            <option value="">Seleccione un estatus...</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="visibility: hidden; pointer-events: none;">
+                        <!-- Espacio fantasma para mantener la simetría de 2 columnas -->
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+                    <button type="button" class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+                    <button type="submit" class="btn btn-guardar" id="btnGuardar" disabled>Guardar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- lista de trabajadores -->
+        <div class="table-card">
+            <div class="table-header-title">
+                LISTADO DE TRABAJADORES
+                <span id="resultCount" style="font-weight: normal; font-size: 0.75rem; color: #666; margin-left: 15px;">0 resultados</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Num. de Trabajador</th>
+                            <th>Departamento</th>
+                            <th>Fecha ingreso</th>
+                            <th>Estatus</th>
+                            <th style="text-align: center;">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workersTableBody">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="ui-sistema.js"></script>
+    <script src="CRUDtrabajador.js"></script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

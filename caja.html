@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Cajas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <h1 id="tituloEstante">Registro de cajas del estante</h1>
+        <p class="subtitle">Ingresa los datos de la caja</p>
+
+        <!-- Botón para regresar al listado de estantes -->
+        <div style="margin-bottom: 15px;">
+            <a href="estante.html" class="btn btn-cancel" style="text-decoration: none; padding: 6px 12px; font-size: 0.85rem; display: inline-block;">⬅ Volver a Estantes</a>
+        </div>
+
+        <!-- Formulario -->
+        <div class="form-card">
+            <h2>Registrar caja</h2>
+            
+            <div id="alertSistema" class="alert-box d-none">
+                <span id="alertTexto"></span>
+                <button type="button" onclick="ocultarAlertaSistema()" class="btn-close-alert">&times;</button>
+            </div>
+
+            <form id="cajaForm">
+                <input type="hidden" id="idCajas" value="">
+                <input type="hidden" id="idEstantesFK" value="">
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="nombreCaja">Nombre <span class="required">*</span></label>
+                        <input type="text" id="nombreCaja" name="nombreCaja" maxlength="6" placeholder="Ej. C-01" required>
+                    </div>
+                    <div class="form-group" style="flex: 3;">
+                        <label for="descripcionCaja">Descripción <span class="required">*</span></label>
+                        <input type="text" id="descripcionCaja" name="descripcionCaja" maxlength="30" placeholder="Ej. Primera caja del estante" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+                    <button type="button" class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+                    <button type="submit" class="btn btn-registrar" id="btnGuardar" disabled>Guardar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Listado -->
+        <div class="table-card">
+            <div class="table-header-title" id="tituloTablaCajas">LISTADO DE CAJAS</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th style="text-align: center; width: 120px;">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cajasTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div id="modalConfirmacion" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h3>Confirmación del Sistema</h3>
+            <p id="modalMensaje">¿Estás seguro de realizar esta acción?</p>
+            <div class="modal-actions">
+                <button type="button" id="btnModalCancelar" class="btn btn-cancel">Cancelar</button>
+                <button type="button" id="btnModalAceptar" class="btn btn-registrar">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+    <script src="CRUDcaja.js"></script>
+</body>
+</html>

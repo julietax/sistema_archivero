@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de tipos de documentos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- BOTÓN Y MENÚ LATERAL -->
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                    <li><a href="#">Consulta y reporte</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="#">Consulta y reporte</a></li>
+                    <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="main-container">
+
+        <h1>Registro de tipo de documento</h1>
+        <p class="subtitle">Ingresa los datos del nuevo tipo de documento</p>
+
+        <!-- FORMULARIO -->
+        <div class="form-card">
+            <form id="tipoDocumentoForm">
+
+                <input type="hidden" id="idTipoDocumento">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nombre">
+                            Tipo de documento <span class="required">*</span>
+                        </label>
+                        <input type="text" id="nombre" name="nombre"
+                               maxlength="30" required>
+                    </div>
+
+                    <div class="form-group description-group">
+                        <label for="descripcion">
+                            Descripción <span class="required">*</span>
+                        </label>
+                        <textarea id="descripcion" name="descripcion"
+                                maxlength="40" required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+    <button type="button" class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+    <button type="reset" class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+    <!-- Agregamos disabled aquí -->
+    <button type="submit" class="btn btn-guardar" id="btnGuardar" disabled>Guardar</button>
+    </div>
+
+            </form>
+        </div>
+
+        <!-- TABLA DE TIPOS DE DOCUMENTOS -->
+        <div class="table-card">
+            <div class="table-header-title">
+                LISTADO DE TIPOS DE DOCUMENTO
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Nombre</th>
+                            <th style="width: 55%;">Descripción</th>
+                            <th style="width: 15%; text-align: center;">Edit</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tiposDocumentoTableBody">
+                        <!-- Los registros se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="ui-sistema.js"></script>
+    <script src="CRUDtiposDocumento.js"></script>
+    <script src="sidebar.js"></script>
+
+</body>
+</html>
