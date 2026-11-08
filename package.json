@@ -4,8 +4,7 @@
   "description": "",
   "main": "CRUDroles.js",
   "scripts": {
-    "start": "node CRUDroles.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node CRUDroles.js"
   },
   "keywords": [],
   "author": "",
