@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Sistema de Gestión Digital de Archivos</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- FontAwesome para el ícono del ojito -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="login-body">
+
+    <div class="login-card">
+        <div class="login-header">
+            <!-- Ajusta la ruta de tu logo si es necesario -->
+            <img src="logo.png" alt="Instituto Tecnológico de Saltillo" class="login-logo" style="width: 60px; height: auto; margin-bottom: 10px;">
+            <h2>Sistema de Gestion Digital de Archivos</h2>
+            <p>Instituto Tecnologico de Saltillo</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="correo">Correo Institucional</label>
+                <input type="email" id="correo" name="correo" placeholder="ejemplo@its.edu.mx" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="contrasena">Contraseña</label>
+                <div class="password-wrapper">
+                    <input type="password" id="contrasena" name="contrasena" required autocomplete="current-password">
+                    <i class="fa-solid fa-eye-slash" id="togglePassword" title="Mostrar/Ocultar contraseña" style="cursor: pointer;"></i>
+                </div>
+            </div>
+
+            <div id="loginAlert" class="alert-message" style="color: red; font-size: 0.9rem; margin-bottom: 10px; display: none;"></div>
+
+            <button type="submit" class="btn btn-guardar" style="width: 100%; margin-bottom: 10px;">Iniciar Sesión</button>
+            <button type="button" id="btnCancelarLogin" class="btn btn-cancel" style="width: 100%;">Cancelar</button>
+        </form>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

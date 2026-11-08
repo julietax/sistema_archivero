@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte y consulta de trabajadores</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- BOTÓN Y MENÚ LATERAL -->
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                    <li><a href="Reportetrabajador.html">Consulta y reporte</a></li>
+                    <li><a href="Departamentos.html">Departamentos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="#">Consulta y reporte</a></li>
+                    <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-container">
+
+        <!-- ========== VISTA 1: CONSULTA ========== -->
+        <section id="vistaConsulta">
+            <h1>Reporte y consulta de trabajadores</h1>
+            <p class="subtitle"></p>
+
+            <div class="form-card">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Periodo de ingreso</label>
+                        <div class="filtro-periodo">
+                            <span>Del</span>
+                            <input type="date" id="fechaDesde">
+                            <span>Al</span>
+                            <input type="date" id="fechaHasta">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroEstatus">Estatus</label>
+                        <select id="filtroEstatus"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroDepartamento">Departamento</label>
+                        <select id="filtroDepartamento"></select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+                    <button class="btn btn-guardar" id="btnBuscar">Buscar</button>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-header-title">
+                    LISTADO DE TRABAJADORES
+                    <span class="contador" id="contador"></span>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Num. de Trabajador</th>
+                                <th>Departamento</th>
+                                <th>Fecha Ingreso</th>
+                                <th class="col-centro">Expediente</th>
+                                <th>Estatus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaTrabajadores">
+                            <tr><td colspan="6" class="empty-message">Realiza una búsqueda</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="form-actions acciones-reporte">
+                <button class="btn btn-cancel" id="btnGenerarReporte">Generar reporte</button>
+            </div>
+        </section>
+
+        <!-- ========== VISTA 2: REPORTE IMPRIMIBLE ========== -->
+        <section id="vistaReporte" class="d-none">
+            <div class="form-actions no-print">
+              <button class="btn btn-cancel" id="btnVolverReporte">← Volver</button>
+             <button class="btn btn-guardar" id="btnDescargarPDF">Descargar PDF</button>  
+            </div>
+
+            <div class="reporte-hoja">
+                <div class="reporte-encabezado">
+                    <img src="OIP.webp" alt="Logo ITS" class="reporte-logo">
+                    <div>
+                        <div class="reporte-titulo">ARCHIVO DE CONCENTRACIÓN</div>
+                        <div class="reporte-inst">Instituto Tecnológico de Saltillo</div>
+                    </div>
+                </div>
+                <div class="reporte-fecha" id="reporteFecha"></div>
+
+                <h2 class="reporte-descripcion" id="reporteDescripcion"></h2>
+                <p class="reporte-total">Total de resultados: <span id="reporteTotal"></span></p>
+
+                <table class="reporte-tabla">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Apellido Paterno</th>
+                            <th>Apellido Materno</th>
+                            <th>Num. de Trabajador</th>
+                            <th>Departamento</th>
+                            <th>Fecha ingreso</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaReporte"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ========== VISTA 3: DOCUMENTOS DEL TRABAJADOR ========== -->
+        <section id="vistaDocumentos" class="d-none">
+            <h1>Documentos del trabajador</h1>
+
+            <div class="form-card panel-info">
+                <h2>Información del trabajador</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="docNombre" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Num. de Trabajador</label>
+                        <input type="text" id="docNumero" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Departamento</label>
+                        <input type="text" id="docDepartamento" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Estatus</label>
+                        <input type="text" id="docEstatus" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-header-title">LISTADO DE DOCUMENTOS</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Estatus</th>
+                                <th>Ubicación</th>
+                                <th class="col-centro">Ver</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaDocumentos"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="form-actions acciones-reporte">
+                <button class="btn btn-cancel" id="btnVolverDocs">← Volver</button>
+            </div>
+        </section>
+
+    </div>
+
+        <script src="sidebar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="Reportetrabajador.js"></script>
+</body>
+</html>
+</body>
+</html>

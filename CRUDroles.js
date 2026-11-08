@@ -39,7 +39,6 @@ const upload = multer({
 });
 
 // Recibe el archivo del campo "foto" y manda los errores en JSON
-// para que la pantalla los muestre en la alerta
 function subirArchivo(req, res, next) {
     upload.single('foto')(req, res, (err) => {
         if (err) {
@@ -52,11 +51,11 @@ function subirArchivo(req, res, next) {
     });
 }
 
-// 2. Conexión a la Base de Datos en Railway (con respaldo local por si acaso)
+// 2. Conexión a la Base de Datos en Railway (Producción / Azure)
 const db = mysql.createConnection({
     host: process.env.MYSQLHOST || 'turntable.proxy.rlwy.net',
     user: process.env.MYSQLUSER || 'root',        
-    password: process.env.MYSQLPASSWORD || 'eIkTCmpephCZNskgux0jSKVZBHZStKUZ', 
+    password: process.env.MYSQLPASSWORD || 'eIkTCmpephCZNskguxOjSKVZBHZStKUZ', 
     database: process.env.MYSQLDATABASE || 'railway',
     port: process.env.MYSQLPORT || 21654
 });
@@ -70,10 +69,8 @@ db.connect((err) => {
 });
 
 // ==========================================
-// NUEVO: estatus de los documentos
+// ESTATUS DE DOCUMENTOS Y REGLAS
 // ==========================================
-// Estos nombres deben existir en la tabla Estatus.
-// Si en tu tabla se llaman distinto, cámbialos aquí.
 const ESTATUS_DISPONIBLE = 'Disponible';
 const ESTATUS_PRESTADO = 'Prestado';
 
@@ -136,9 +133,66 @@ app.delete('/api/roles/:id', (req, res) => {
 });
 
 
-/* ================= ROUTES DE USUARIOS ================= */
+/* ================= ROUTES DE ESTATUS (GESTIÓN / CRUD CON VALIDACIÓN DE DUPLICADOS) ================= */
+app.get('/api/estatus-crud', (req, res) => {
+    db.query('SELECT idEstatus, Estatus FROM Estatus', (err, results) => {
+        if (err) return res.status(500).send(err);
+        res.json(results);
+    });
+});
+
+app.post('/api/estatus-crud', (req, res) => {
+    const { nombre } = req.body;
+    const checkQuery = 'SELECT idEstatus FROM Estatus WHERE Estatus = ?';
+    db.query(checkQuery, [nombre], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) {
+            return res.status(400).json({ error: 'Ya existe un estatus registrado con este nombre.' });
+        }
+
+        db.query('INSERT INTO Estatus (Estatus) VALUES (?)', [nombre], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ message: 'Estatus creado con éxito', id: result.insertId });
+        });
+    });
+});
+
+app.put('/api/estatus-crud/:id', (req, res) => {
+    const id = req.params.id;
+    const { nombre } = req.body;
+    const checkQuery = 'SELECT idEstatus FROM Estatus WHERE Estatus = ? AND idEstatus <> ?';
+    db.query(checkQuery, [nombre, id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) {
+            return res.status(400).json({ error: 'Ya existe otro estatus registrado con este nombre.' });
+        }
+
+        db.query('UPDATE Estatus SET Estatus = ? WHERE idEstatus = ?', [nombre, id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Estatus actualizado con éxito' });
+        });
+    });
+});
+
+app.delete('/api/estatus-crud/:id', (req, res) => {
+    const id = req.params.id;
+    db.query('DELETE FROM Estatus WHERE idEstatus = ?', [id], (err) => {
+        if (err) {
+            return res.status(400).json({ error: 'No se puede eliminar el estatus: está vinculado a otros registros del sistema.' });
+        }
+        res.json({ message: 'Estatus eliminado con éxito' });
+    });
+});
+
+
+/* ================= ROUTES DE USUARIOS Y LOGIN ================= */
 app.get('/api/usuarios', (req, res) => {
-    db.query('SELECT idUsuarios, Nombre, Apellido_paterno FROM Usuarios', (err, results) => {
+    db.query(`
+        SELECT u.idUsuarios, u.Nombre, u.Apellido_paterno 
+        FROM Usuarios u
+        JOIN Estatus e ON u.Estatus_idEstatus = e.idEstatus
+        WHERE e.Estatus = 'Activo'
+    `, (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -146,9 +200,11 @@ app.get('/api/usuarios', (req, res) => {
 
 app.get('/api/usuarios-select', (req, res) => {
     const query = `
-        SELECT idUsuarios, 
-               TRIM(CONCAT(Nombre, ' ', Apellido_paterno, ' ', IFNULL(Apellido_materno, ''))) AS NombreCompleto 
-        FROM Usuarios
+        SELECT u.idUsuarios, 
+               TRIM(CONCAT(u.Nombre, ' ', u.Apellido_paterno, ' ', IFNULL(u.Apellido_materno, ''))) AS NombreCompleto 
+        FROM Usuarios u
+        JOIN Estatus e ON u.Estatus_idEstatus = e.idEstatus
+        WHERE e.Estatus = 'Activo'
     `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send(err);
@@ -156,12 +212,13 @@ app.get('/api/usuarios-select', (req, res) => {
     });
 });
 
-/* ================= ROUTES DE USUARIOS ================= */
 app.get('/api/usuarios-completo', (req, res) => {
     const query = `
-        SELECT u.idUsuarios, u.Roles_idRoles, u.Nombre, u.Apellido_paterno, u.Apellido_materno, u.Correo_electronico, u.Contrasena, r.Nombre AS NombreRol
+        SELECT u.idUsuarios, u.Roles_idRoles, u.Estatus_idEstatus, u.Nombre, u.Apellido_paterno, u.Apellido_materno, u.Correo_electronico, u.Contrasena, r.Nombre AS NombreRol, es.Estatus AS EstatusNombre
         FROM Usuarios u
         JOIN Roles r ON u.Roles_idRoles = r.idRoles
+        JOIN Estatus es ON u.Estatus_idEstatus = es.idEstatus
+        WHERE es.Estatus = 'Activo'
     `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send(err);
@@ -170,9 +227,8 @@ app.get('/api/usuarios-completo', (req, res) => {
 });
 
 app.post('/api/usuarios', (req, res) => {
-    const { roles_idRoles, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
+    const { roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
     
-    // Validar si ya existe un usuario con el mismo correo electrónico
     const checkQuery = 'SELECT * FROM Usuarios WHERE Correo_electronico = ?';
     db.query(checkQuery, [correo_electronico], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -180,8 +236,8 @@ app.post('/api/usuarios', (req, res) => {
             return res.status(400).json({ error: 'Ya existe un usuario registrado con este correo electrónico.' });
         }
 
-        const insertQuery = 'INSERT INTO Usuarios (Roles_idRoles, Nombre, Apellido_paterno, Apellido_materno, Correo_electronico, Contrasena) VALUES (?, ?, ?, ?, ?, ?)';
-        db.query(insertQuery, [roles_idRoles, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena], (err, result) => {
+        const insertQuery = 'INSERT INTO Usuarios (Roles_idRoles, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Correo_electronico, Contrasena) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        db.query(insertQuery, [roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: 'Usuario creado con éxito', id: result.insertId });
         });
@@ -190,9 +246,8 @@ app.post('/api/usuarios', (req, res) => {
 
 app.put('/api/usuarios/:id', (req, res) => {
     const id = req.params.id;
-    const { roles_idRoles, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
+    const { roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
 
-    // Validar que el correo no pertenezca a OTRO usuario diferente
     const checkQuery = 'SELECT * FROM Usuarios WHERE Correo_electronico = ? AND idUsuarios <> ?';
     db.query(checkQuery, [correo_electronico, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -200,26 +255,62 @@ app.put('/api/usuarios/:id', (req, res) => {
             return res.status(400).json({ error: 'El correo electrónico ya está en uso por otro usuario.' });
         }
 
-        const query = 'UPDATE Usuarios SET Roles_idRoles = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Correo_electronico = ?, Contrasena = ? WHERE idUsuarios = ?';
-        db.query(query, [roles_idRoles, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena, id], (err, result) => {
+        const query = 'UPDATE Usuarios SET Roles_idRoles = ?, Estatus_idEstatus = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Correo_electronico = ?, Contrasena = ? WHERE idUsuarios = ?';
+        db.query(query, [roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena, id], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Usuario actualizado con éxito' });
         });
     });
 });
 
+// RESPALDO LÓGICO (SOFT DELETE) PARA USUARIOS
 app.delete('/api/usuarios/:id', (req, res) => {
     const id = req.params.id;
-    const query = 'DELETE FROM Usuarios WHERE idUsuarios = ?';
-    db.query(query, [id], (err, result) => {
-        if (err) return res.status(500).send(err);
-        res.json({ message: 'Usuario eliminado con éxito' });
+
+    db.query("SELECT idEstatus FROM Estatus WHERE Estatus = 'Inactivo' LIMIT 1", (err, estatusRes) => {
+        if (err || estatusRes.length === 0) {
+            return res.status(500).json({ error: 'No se encontró el estatus Inactivo en la base de datos.' });
+        }
+        const idInactivo = estatusRes[0].idEstatus;
+
+        const query = 'UPDATE Usuarios SET Estatus_idEstatus = ? WHERE idUsuarios = ?';
+        db.query(query, [idInactivo, id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Usuario dado de baja del sistema lógicamente.' });
+        });
+    });
+});
+
+// VALIDACIÓN DE LOGIN
+app.post('/api/login', (req, res) => {
+    const { correo, contrasena } = req.body;
+
+    const query = `
+        SELECT u.idUsuarios, u.Nombre, u.Correo_electronico, r.Nombre AS Rol, e.Estatus AS EstadoEstatus
+        FROM Usuarios u
+        JOIN Roles r ON u.Roles_idRoles = r.idRoles
+        JOIN Estatus e ON u.Estatus_idEstatus = e.idEstatus
+        WHERE u.Correo_electronico = ? AND u.Contrasena = ?
+    `;
+
+    db.query(query, [correo, contrasena], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) {
+            return res.status(401).json({ error: 'Credenciales incorrectas o usuario no encontrado.' });
+        }
+
+        const usuario = results[0];
+
+        if (usuario.EstadoEstatus !== 'Activo') {
+            return res.status(403).json({ error: 'Acceso denegado: Tu cuenta se encuentra inactiva.' });
+        }
+
+        res.json({ message: 'Login exitoso', usuario });
     });
 });
 
 
 /* ================= ROUTES DE PRÉSTAMOS Y EXPEDIENTES ================= */
-
 app.get('/api/trabajadores-expedientes', (req, res) => {
     const query = `
         SELECT t.idTrabajadores, t.No_trabajador, 
@@ -343,7 +434,7 @@ app.delete('/api/prestamos/:id', (req, res) => {
 });
 
 
-/* ================= ROUTES DE TRABAJADORES ================= */
+/* ================= ROUTES DE DEPARTAMENTOS ================= */
 app.get('/api/departamentos', (req, res) => {
     db.query('SELECT idDepartamentos, Nombre FROM Departamentos', (err, results) => {
         if (err) return res.status(500).send(err);
@@ -351,6 +442,52 @@ app.get('/api/departamentos', (req, res) => {
     });
 });
 
+app.post('/api/departamentos', (req, res) => {
+    const { nombre } = req.body;
+    const checkQuery = 'SELECT idDepartamentos FROM Departamentos WHERE Nombre = ?';
+    db.query(checkQuery, [nombre], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) return res.status(400).json({ error: 'Ya existe un departamento con este nombre.' });
+
+        db.query('INSERT INTO Departamentos (Nombre) VALUES (?)', [nombre], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ message: 'Departamento creado con éxito', id: result.insertId });
+        });
+    });
+});
+
+app.put('/api/departamentos/:id', (req, res) => {
+    const id = req.params.id;
+    const { nombre } = req.body;
+    const checkQuery = 'SELECT idDepartamentos FROM Departamentos WHERE Nombre = ? AND idDepartamentos <> ?';
+    db.query(checkQuery, [nombre, id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) return res.status(400).json({ error: 'Ya existe otro departamento con este nombre.' });
+
+        db.query('UPDATE Departamentos SET Nombre = ? WHERE idDepartamentos = ?', [nombre, id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Departamento actualizado con éxito' });
+        });
+    });
+});
+
+app.delete('/api/departamentos/:id', (req, res) => {
+    const id = req.params.id;
+    db.query('SELECT COUNT(*) AS total FROM Trabajadores WHERE Departamentos_idDepartamentos = ?', [id], (err, filas) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (filas[0].total > 0) {
+            return res.status(400).json({ error: `No se puede eliminar: tiene ${filas[0].total} trabajador(es) asociado(s).` });
+        }
+
+        db.query('DELETE FROM Departamentos WHERE idDepartamentos = ?', [id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Departamento eliminado' });
+        });
+    });
+});
+
+
+/* ================= ROUTES DE TRABAJADORES ================= */
 app.get('/api/estatus', (req, res) => {
     db.query('SELECT idEstatus, Estatus FROM Estatus WHERE Estatus NOT IN (?, ?)', [ESTATUS_DISPONIBLE, ESTATUS_PRESTADO], (err, results) => {
         if (err) return res.status(500).send(err);
@@ -416,6 +553,72 @@ app.delete('/api/trabajadores/:id', (req, res) => {
 });
 
 
+/* ================= ROUTES PARA REPORTE DE TRABAJADORES ================= */
+app.get('/api/trabajadores/reporte', (req, res) => {
+    const { desde, hasta, estatus, departamento } = req.query;
+    let query = `
+        SELECT t.idTrabajadores AS id, t.Nombre AS nombre, t.Apellido_paterno AS apellidoPaterno, 
+               t.Apellido_materno AS apellidoMaterno, t.No_trabajador AS numero, 
+               d.Nombre AS departamento, t.Fecha_ingreso AS fechaIngreso, 
+               e.Estatus AS estatus
+        FROM Trabajadores t
+        JOIN Departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
+        JOIN Estatus e ON t.Estatus_idEstatus = e.idEstatus
+        WHERE 1=1
+    `;
+    const params = [];
+
+    if (desde) { query += ' AND t.Fecha_ingreso >= ?'; params.push(desde); }
+    if (hasta) { query += ' AND t.Fecha_ingreso <= ?'; params.push(hasta); }
+    if (estatus) { query += ' AND t.Estatus_idEstatus = ?'; params.push(estatus); }
+    if (departamento) { query += ' AND t.Departamentos_idDepartamentos = ?'; params.push(departamento); }
+
+    db.query(query, params, (err, results) => {
+        if (err) return res.status(500).send(err);
+        
+        const formateados = results.map(t => {
+            const f = t.fechaIngreso ? new Date(t.fechaIngreso) : null;
+            const fechaCorta = f ? f.toLocaleDateString('es-MX') : '';
+            const fechaLarga = f ? f.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+            return { ...t, fechaCorta, fechaLarga };
+        });
+
+        res.json(formateados);
+    });
+});
+
+app.get('/api/trabajadores/:id/documentos', (req, res) => {
+    const id = req.params.id;
+    const qTrabajador = `
+        SELECT t.Nombre AS nombre, t.Apellido_paterno AS apellidoPaterno, t.Apellido_materno AS apellidoMaterno, 
+               t.No_trabajador AS numero, d.Nombre AS departamento, e.Estatus AS estatus
+        FROM Trabajadores t
+        JOIN Departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
+        JOIN Estatus e ON t.Estatus_idEstatus = e.idEstatus
+        WHERE t.idTrabajadores = ?
+    `;
+    db.query(qTrabajador, [id], (err, tRes) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (tRes.length === 0) return res.status(404).json({ error: 'Trabajador no encontrado' });
+
+        const qDocs = `
+            SELECT td.Nombre AS tipo, es.Estatus AS estatus, 
+                   CONCAT('Estante: ', est.Estante, ' / Caja: ', c.Caja) AS ubicacion, doc.Foto AS foto
+            FROM Documento doc
+            JOIN Tipo_documento td ON doc.Tipo_documento_idTipo_documento = td.idTipo_documento
+            JOIN Estatus es ON doc.Estatus_idEstatus = es.idEstatus
+            JOIN Cajas c ON doc.Cajas_idCajas = c.idCajas
+            JOIN Estantes est ON c.Estantes_idEstantes = est.idEstantes
+            WHERE doc.Trabajadores_idTrabajadores = ?
+        `;
+        db.query(qDocs, [id], (err, dRes) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ trabajador: tRes[0], documentos: dRes });
+        });
+    });
+});
+
+
 /* ================= ROUTES DE TIPOS DE DOCUMENTO ================= */
 app.get('/api/tipos-documento', (req, res) => {
     db.query('SELECT idTipo_documento, Nombre, Descripcion FROM Tipo_documento', (err, results) => {
@@ -426,7 +629,6 @@ app.get('/api/tipos-documento', (req, res) => {
 
 app.post('/api/tipos-documento', (req, res) => {
     const { nombre, descripcion } = req.body;
-
     const checkQuery = 'SELECT idTipo_documento FROM Tipo_documento WHERE Nombre = ?';
     db.query(checkQuery, [nombre], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -443,7 +645,6 @@ app.post('/api/tipos-documento', (req, res) => {
 app.put('/api/tipos-documento/:id', (req, res) => {
     const id = req.params.id;
     const { nombre, descripcion } = req.body;
-
     const checkQuery = 'SELECT idTipo_documento FROM Tipo_documento WHERE Nombre = ? AND idTipo_documento <> ?';
     db.query(checkQuery, [nombre, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -459,8 +660,7 @@ app.put('/api/tipos-documento/:id', (req, res) => {
 
 app.delete('/api/tipos-documento/:id', (req, res) => {
     const id = req.params.id;
-    const query = 'DELETE FROM Tipo_documento WHERE idTipo_documento = ?';
-    db.query(query, [id], (err, result) => {
+    db.query('DELETE FROM Tipo_documento WHERE idTipo_documento = ?', [id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Tipo de documento eliminado con éxito' });
     });
@@ -496,13 +696,12 @@ app.put('/api/estantes/:id', (req, res) => {
 
 app.delete('/api/estantes/:id', (req, res) => {
     const id = req.params.id;
-
     db.query('SELECT COUNT(*) AS total FROM Cajas WHERE Estantes_idEstantes = ?', [id], (err, filas) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (filas[0].total > 0) {
             return res.status(400).json({
-                error: `No se puede eliminar el estante: tiene ${filas[0].total} caja(s) registrada(s). Elimina primero sus cajas.`
+                error: `No se puede eliminar el estante: tiene ${filas[0].total} caja(s) registrada(s).`
             });
         }
 
@@ -548,7 +747,6 @@ app.put('/api/cajas/:id', (req, res) => {
 
 app.delete('/api/cajas/:id', (req, res) => {
     const id = req.params.id;
-
     db.query('SELECT COUNT(*) AS total FROM Documento WHERE Cajas_idCajas = ?', [id], (err, filas) => {
         if (err) return res.status(500).json({ error: err.message });
 
@@ -572,7 +770,6 @@ app.delete('/api/cajas/:id', (req, res) => {
 
 
 /* ================= ROUTES DE DOCUMENTOS ================= */
-
 app.get('/api/documentos-completo', (req, res) => {
     const query = `
         SELECT d.idDocumento, d.Cajas_idCajas, d.Estatus_idEstatus, d.Trabajadores_idTrabajadores, d.Tipo_documento_idTipo_documento, d.Foto,
@@ -669,7 +866,6 @@ app.put('/api/documentos/:id', subirArchivo, (req, res) => {
 
 app.delete('/api/documentos/:id', (req, res) => {
     const id = req.params.id;
-
     const prestadoQuery = `
         SELECT COUNT(*) AS total
         FROM Prestamo p
@@ -690,8 +886,8 @@ app.delete('/api/documentos/:id', (req, res) => {
     });
 });
 
-// Iniciar servidor
+// Iniciar servidor adaptado para entornos cloud (Azure/Railway)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor web corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor web corriendo en el puerto ${PORT}`);
 });

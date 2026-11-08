@@ -1,0 +1,792 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta y reporte de documentos</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            
+            margin: 0;
+            padding: 80px 24px 24px;
+            background: #ffffff;
+            color: #111;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+        }
+
+        .consulta-panel {
+            width: 100%;
+            max-width: 1400px;
+            min-height: 495px;
+            margin: 8px auto;
+            padding: 15px 24px 28px;
+            background: #d9d9d9;
+            border-radius: 11px;
+            box-shadow: 0 2px 3px #0003;
+        }
+
+        .titulo {
+            margin: 0 0 25px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .subtitulo {
+            margin: 0 0 22px 14px;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .filtros {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 26px;
+            padding: 14px 8px 24px;
+            background: #e9e9e9;
+            border-radius: 11px;
+            box-shadow: 0 2px 3px #0004;
+        }
+
+        .campo {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            width: 185px;
+            min-width: 150px;
+        }
+
+        .campo label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .campo select {
+            width: 100%;
+            height: 31px;
+            padding: 4px 10px;
+            border: 1px solid #bbb;
+            border-radius: 7px;
+            background: #c5c5c5;
+            color: #111;
+            font-size: 14px;
+        }
+
+        .acciones-filtros {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            margin-top: -4px;
+        }
+
+        button {
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .btn-limpiar {
+            min-width: 138px;
+            padding: 7px 15px;
+            background: #a8a8a8;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-buscar {
+            min-width: 107px;
+            padding: 7px 15px;
+            background: #3999e5;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            filter: brightness(0.94);
+        }
+
+        .acciones-reporte {
+            display: flex;
+            justify-content: flex-end;
+            margin: 17px 5px 23px;
+        }
+
+        .btn-reporte {
+            min-width: 190px;
+            padding: 5px 14px;
+            background: #858585;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 3px #0003;
+        }
+
+        .btn-reporte span {
+            margin-right: 26px;
+        }
+
+        .listado {
+            overflow: hidden;
+            border-radius: 10px;
+            background: #e8e8e8;
+            box-shadow: 0 2px 3px #0003;
+        }
+
+        .listado-titulo {
+            padding: 8px 10px 4px;
+            font-size: 14px;
+        }
+
+        .tabla-contenedor {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        thead {
+            background: #c9c9c9;
+        }
+
+        th {
+            padding: 5px 8px;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #bcbcbc;
+        }
+
+        tbody tr:hover {
+            background: #f4f4f4;
+        }
+
+        .btn-imagen {
+            padding: 0;
+            background: transparent;
+            color: #222;
+            font-size: 17px;
+        }
+
+        .sin-resultados {
+            padding: 20px;
+            color: #666;
+            text-align: center;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 10px;
+            }
+
+            .consulta-panel {
+                padding: 16px 12px;
+            }
+
+            .titulo {
+                font-size: 20px;
+            }
+
+            .filtros {
+                gap: 18px;
+            }
+
+            .campo {
+                width: 100%;
+            }
+
+            .acciones-filtros {
+                flex-wrap: wrap;
+            }
+        }
+        .menu-toggle-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background-color: #3999e5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.sidebar-overlay.active {
+    visibility: visible;
+    opacity: 1;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 280px;
+    height: 100%;
+    background-color: #e2e2e2;
+    border-right: 1px solid #b5b5b5;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+    transition: left 0.3s ease;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.sidebar.active {
+    left: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f4f4f4;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-bottom: 25px;
+}
+
+.user-profile-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.user-icon {
+    background: #ddd;
+    padding: 6px;
+    border-radius: 50%;
+    font-size: 1rem;
+}
+
+.close-sidebar-btn {
+    background: #fff;
+    border: 1px solid #ccc;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-sidebar-btn:hover {
+    background-color: #eee;
+}
+
+.sidebar-nav {
+    flex: 1;
+}
+
+.nav-section {
+    margin-bottom: 18px;
+}
+
+.nav-section-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1f1f1f;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.nav-sublist {
+    list-style: none;
+    padding-left: 12px;
+    border-left: 2px solid #888;
+    margin-left: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-sublist li a {
+    text-decoration: none;
+    color: #333;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.nav-sublist li a:hover {
+    color: var(--btn-guardar);
+    font-weight: bold;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 15px;
+}
+
+.btn-cerrar-sesion {
+    width: 100%;
+    background-color: var(--btn-guardar);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.btn-cerrar-sesion:hover {
+    background-color: var(--btn-guardar-hover);
+}
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+
+</head>
+
+<body>
+    
+    <!-- BOTÓN Y MENÚ LATERAL FLOTANTE -->
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span>Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                <li><a href="consultadoc.html">Consulta y reporte</a></li>
+                <li><a href="documento.html">Registro documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes y Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+    <main class="consulta-panel">
+
+        <h1 class="titulo">Consulta y reporte de documentos</h1>
+
+        <p class="subtitulo">Filtros de búsqueda</p>
+
+        <section class="filtros">
+
+            <div class="campo">
+                <label for="tipoDocumento">Tipo de documento</label>
+                <select id="tipoDocumento">
+                    <option value="">Todos</option>
+                    <option value="Contrato">Contrato</option>
+                    <option value="Acta de nacimiento">Acta de nacimiento</option>
+                    <option value="Identificación oficial">Identificación oficial</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label for="departamento">Departamento</label>
+                <select id="departamento">
+                    <option value="">Todos</option>
+                    <option value="Finanzas">Finanzas</option>
+                    <option value="Recursos Humanos">Recursos Humanos</option>
+                    <option value="Dirección">Dirección</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label for="estatus">Estatus</label>
+                <select id="estatus">
+                    <option value="">Todos</option>
+                    <option value="Disponible">Disponible</option>
+                    <option value="Prestado">Prestado</option>
+                </select>
+            </div>
+
+            <div class="acciones-filtros">
+                <button type="button" class="btn-limpiar" id="btnLimpiar">
+                limpiar filtros
+                </button>
+
+                <button type="button" class="btn-buscar" id="btnBuscar">
+                    Buscar &nbsp; ⌕
+                </button>
+            </div>
+
+        </section>
+
+        <div class="acciones-reporte">
+            <button type="button" class="btn-reporte" id="btnReporte">
+                <span>▣</span> Generar reporte
+            </button>
+        </div>
+
+        <section class="listado">
+            <div class="listado-titulo">LISTADO DE DOCUMENTOS</div>
+
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de documento</th>
+                            <th>Trabajador</th>
+                            <th>Departamento</th>
+                            <th>Estatus</th>
+                            <th>Ubicación</th>
+                            <th>Imagen</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="listaDocumentos"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+       const documentos = [];
+
+        const tipo = document.getElementById("tipoDocumento");
+        const departamento = document.getElementById("departamento");
+        const estatus = document.getElementById("estatus");
+        const lista = document.getElementById("listaDocumentos");
+
+        function mostrarDocumentos(datos) {
+            lista.replaceChildren();
+
+            if (datos.length === 0) {
+                const fila = document.createElement("tr");
+                const celda = document.createElement("td");
+
+                celda.colSpan = 6;
+                celda.className = "sin-resultados";
+                celda.textContent = "No se encontraron documentos.";
+
+                fila.appendChild(celda);
+                lista.appendChild(fila);
+                return;
+            }
+
+            datos.forEach(documento => {
+                const fila = document.createElement("tr");
+
+                [
+                    documento.tipo,
+                    documento.trabajador,
+                    documento.departamento,
+                    documento.estatus,
+                    documento.ubicacion
+                ].forEach(valor => {
+                    const celda = document.createElement("td");
+                    celda.textContent = valor;
+                    fila.appendChild(celda);
+                });
+
+                const celdaImagen = document.createElement("td");
+                const botonImagen = document.createElement("button");
+
+                botonImagen.type = "button";
+                botonImagen.className = "btn-imagen";
+                botonImagen.textContent = "▧";
+                botonImagen.title = "Ver imagen del documento";
+                botonImagen.setAttribute("aria-label", "Ver imagen del documento");
+
+                botonImagen.addEventListener("click", () => {
+    const inputImagen = document.createElement("input");
+
+    inputImagen.type = "file";
+    inputImagen.accept = "image/*";
+
+    inputImagen.addEventListener("change", (evento) => {
+        const archivo = evento.target.files[0];
+
+        if (!archivo) {
+            return;
+        }
+
+        const imagen = URL.createObjectURL(archivo);
+
+        const ventana = window.open("", "_blank", "width=700,height=600");
+
+        ventana.document.write(`
+            <html>
+            <head>
+                <title>Imagen del documento</title>
+            </head>
+            <body style="margin:0; display:flex; justify-content:center; align-items:center; background:#222;">
+                <img src="${imagen}" style="max-width:90%; max-height:90%; object-fit:contain;">
+            </body>
+            </html>
+        `);
+    });
+
+    inputImagen.click();
+});
+
+                celdaImagen.appendChild(botonImagen);
+                fila.appendChild(celdaImagen);
+                lista.appendChild(fila);
+            });
+        }
+
+        
+function buscarDocumentos() {
+    const tipoSeleccionado = tipo.value.trim().toLowerCase();
+    const departamentoSeleccionado = departamento.value.trim().toLowerCase();
+    const estatusSeleccionado = estatus.value.trim().toLowerCase();
+
+    const resultados = documentos.filter(documento => {
+        return (
+            (!tipoSeleccionado ||
+                documento.tipo.trim().toLowerCase() === tipoSeleccionado) &&
+
+            (!departamentoSeleccionado ||
+                documento.departamento.trim().toLowerCase() === departamentoSeleccionado) &&
+
+            (!estatusSeleccionado ||
+                documento.estatus.trim().toLowerCase() === estatusSeleccionado)
+        );
+    });
+
+    mostrarDocumentos(resultados);
+}
+
+
+        document.getElementById("btnBuscar")
+            .addEventListener("click", buscarDocumentos);
+
+        document.getElementById("btnLimpiar")
+            .addEventListener("click", () => {
+                tipo.value = "";
+                departamento.value = "";
+                estatus.value = "";
+                mostrarDocumentos(documentos);
+            });
+
+document.getElementById("btnReporte").addEventListener("click", () => {
+    try {
+        if (!window.jspdf) {
+            alert("No se pudo cargar jsPDF. Comprueba tu conexión a internet y vuelve a intentarlo.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+        if (typeof pdf.autoTable !== "function") {
+            alert("No se pudo cargar la herramienta de tablas del PDF. Comprueba tu conexión a internet.");
+            return;
+        }
+
+        const fecha = new Date();
+        const fechaTexto = fecha.toLocaleString("es-MX", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+        });
+
+        // Toma únicamente los documentos que aparecen actualmente en la tabla.
+        const filas = Array.from(lista.querySelectorAll("tr"))
+            .filter(fila => fila.querySelectorAll("td").length === 6)
+            .map(fila => {
+                const celdas = fila.querySelectorAll("td");
+                const documento = documentos.find(doc =>
+                    doc.tipo === celdas[0].textContent.trim() &&
+                    doc.trabajador === celdas[1].textContent.trim() &&
+                    doc.departamento === celdas[2].textContent.trim() &&
+                    doc.estatus === celdas[3].textContent.trim() &&
+                    doc.ubicacion === celdas[4].textContent.trim()
+                );
+
+                return [
+                    celdas[0].textContent.trim(),
+                    celdas[1].textContent.trim(),
+                    documento?.numTrabajador || "No registrado",
+                    celdas[2].textContent.trim(),
+                    celdas[3].textContent.trim()
+                ];
+            });
+
+        function dibujarReporte(conLogo) {
+            // Encabezado institucional compacto, como en el prototipo.
+          
+if (conLogo) {
+    pdf.addImage(
+        conLogo,
+        "PNG",
+        14,
+        9,
+        27,
+        27
+    );
+}
+
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(12);
+            pdf.text("ARCHIVO DE CONCENTRACIÓN", 43, 17);
+
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(9);
+            pdf.text("Instituto Tecnológico de Saltillo", 43, 23);
+
+            pdf.setFontSize(8);
+            pdf.text("Fecha: " + fechaTexto, 196, 29, { align: "right" });
+
+            pdf.setDrawColor(125, 125, 125);
+            pdf.setLineWidth(0.25);
+            pdf.line(14, 38, 196, 38);
+
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(11);
+            const titulo = pdf.splitTextToSize(
+                "Reporte de documentos consultados.",
+                165
+            );
+            pdf.text(titulo, 19, 51);
+
+            const yTotal = 51 + (titulo.length * 5) + 9;
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(9);
+            pdf.text("Total de resultados: " + filas.length, 19, yTotal);
+
+            pdf.autoTable({
+                startY: yTotal + 8,
+                margin: { left: 16, right: 16 },
+                head: [[
+                    "Tipo de\ndocumento",
+                    "Trabajador",
+                    "Num. de\nTrabajador",
+                    "Departamento",
+                    "Estatus"
+                ]],
+                body: filas,
+                theme: "plain",
+                styles: {
+                    font: "helvetica",
+                    fontSize: 8,
+                    textColor: [0, 0, 0],
+                    cellPadding: 2.5,
+                    overflow: "linebreak",
+                    lineWidth: 0.12,
+                    lineColor: [210, 210, 210],
+                    valign: "middle",
+                    minCellHeight: 10
+                },
+                headStyles: {
+                    fontStyle: "bold",
+                    fontSize: 8,
+                    halign: "center",
+                    valign: "middle",
+                    lineWidth: 0.12,
+                    lineColor: [210, 210, 210]
+                },
+                columnStyles: {
+                    0: { cellWidth: 50, halign: "center" },
+                    1: { cellWidth: 31 },
+                    2: { cellWidth: 27, halign: "center" },
+                    3: { cellWidth: 39 },
+                    4: { cellWidth: 23, halign: "center" }
+                },
+                didDrawPage: function () {
+                    // Mantener el reporte sin colores de fondo fuertes.
+                }
+            });
+
+            pdf.save("reporte_documentos.pdf");
+        }
+
+const logo = new Image();
+
+logo.onload = () => {
+    dibujarReporte(logo);
+};
+
+logo.onerror = () => {
+    alert("No se pudo cargar el logo.");
+};
+
+logo.src = "logo.png";
+
+        
+} catch (error) {
+    alert("Error al generar el reporte: " + error.message);
+}
+});
+mostrarDocumentos(documentos);
+</script>
+<script src="sidebar.js"></script>
+
+</body>
+</html>

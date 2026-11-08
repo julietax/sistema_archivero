@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de departamentos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ===== MENÚ LATERAL: copia aquí el mismo bloque de tus otras pantallas ===== -->
+    <button class="menu-toggle-btn" id="menuToggle">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder"><span class="user-icon">👤</span> Usuario</div>
+            <button class="close-sidebar-btn" id="closeMenu">✕</button>
+        </div>
+        <nav class="sidebar-nav">
+          <div class="nav-section">
+        <div class="nav-section-title">Roles <span>▲</span></div>
+        <ul class="nav-sublist">
+            <li><a href="index.html">Registro de roles</a></li>
+        </ul>
+    </div>
+    <div class="nav-section">
+        <div class="nav-section-title">Usuarios <span>▲</span></div>
+        <ul class="nav-sublist">
+            <li><a href="usuario.html">Registro de usuarios</a></li>
+        </ul>
+    </div>
+    <div class="nav-section">
+        <div class="nav-section-title">Trabajadores <span>▲</span></div>
+        <ul class="nav-sublist">
+            <li><a href="trabajador.html">Registro de trabajadores</a></li>
+            <li><a href="Reportetrabajador.html">Consulta y reporte</a></li>
+            <li><a href="Departamentos.html">Departamentos</a></li>
+        </ul>
+    </div>
+    <div class="nav-section">
+        <div class="nav-section-title">Documentos <span>▲</span></div>
+        <ul class="nav-sublist">
+            <li><a href="#">Consulta y reporte</a></li>
+            <li><a href="documento.html">Registro documentos</a></li>
+            <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+            <li><a href="prestamo.html">Préstamos</a></li>
+            <li><a href="estante.html">Estantes y Cajas</a></li>
+        </ul>
+    </div>
+</div>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <h1>Gestión de departamentos</h1>
+        <p class="subtitle">Ingresa los datos de los departamentos existentes</p>
+
+        <div class="form-card">
+            <h2 id="tituloFormulario">Filtros de departamentos</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nombre">Nombre <span class="required">*</span></label>
+                    <input type="text" id="nombre" maxlength="15" autocomplete="off">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+                <button type="button" class="btn btn-limpiar" id="btnLimpiar">Limpiar</button>
+                <button type="button" class="btn btn-guardar" id="btnGuardar">Guardar</button>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header-title">LISTADO DE DEPARTAMENTOS</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-centro">Nombre</th>
+                            <th class="col-centro">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDepartamentos"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de avisos y confirmaciones -->
+    <div class="modal-overlay d-none" id="modal">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+            <h3 id="modalTitulo"></h3>
+            <p id="modalTexto"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" id="modalCancelar">Cancelar</button>
+                <button type="button" class="btn btn-guardar" id="modalAceptar">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+    <script src="Departamentos.js"></script>
+</body>
+</html>
