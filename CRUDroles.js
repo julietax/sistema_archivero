@@ -22,7 +22,6 @@ app.use('/uploads', express.static(carpetaUploads));
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, carpetaUploads),
     filename: (req, file, cb) => {
-        // nombre único: fecha + número al azar + la extensión original (.pdf, .jpg...)
         const extension = path.extname(file.originalname).toLowerCase();
         cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + extension);
     }
@@ -38,7 +37,6 @@ const upload = multer({
     }
 });
 
-// Recibe el archivo del campo "foto" y manda los errores en JSON
 function subirArchivo(req, res, next) {
     upload.single('foto')(req, res, (err) => {
         if (err) {
@@ -74,25 +72,23 @@ db.connect((err) => {
 const ESTATUS_DISPONIBLE = 'Disponible';
 const ESTATUS_PRESTADO = 'Prestado';
 
-// Busca el id de un estatus a partir de su nombre
 function obtenerIdEstatus(nombre, callback) {
-    db.query('SELECT idEstatus FROM Estatus WHERE Estatus = ? LIMIT 1', [nombre], (err, filas) => {
+    db.query('SELECT idEstatus FROM estatus WHERE Estatus = ? LIMIT 1', [nombre], (err, filas) => {
         if (err) return callback(err);
         if (filas.length === 0) {
-            return callback(new Error(`No existe el estatus "${nombre}" en la tabla Estatus.`));
+            return callback(new Error(`No existe el estatus "${nombre}" en la tabla estatus.`));
         }
         callback(null, filas[0].idEstatus);
     });
 }
 
-// Borra el archivo que multer ya guardó (se usa cuando el guardado falla)
 function borrarArchivoSubido(req) {
     if (req.file) fs.unlink(req.file.path, () => {});
 }
 
 /* ================= ROUTES DE ROLES ================= */
 app.get('/api/roles', (req, res) => {
-    db.query('SELECT idRoles, Nombre, Descripcion FROM Roles', (err, results) => {
+    db.query('SELECT idRoles, Nombre, Descripcion FROM roles', (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -100,12 +96,12 @@ app.get('/api/roles', (req, res) => {
 
 app.post('/api/roles', (req, res) => {
     const { nombre, descripcion } = req.body;
-    const checkQuery = 'SELECT * FROM Roles WHERE Nombre = ?';
+    const checkQuery = 'SELECT * FROM roles WHERE Nombre = ?';
     db.query(checkQuery, [nombre], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) return res.status(400).json({ error: 'Ya existe un rol registrado con este nombre.' });
 
-        const insertQuery = 'INSERT INTO Roles (Nombre, Descripcion) VALUES (?, ?)';
+        const insertQuery = 'INSERT INTO roles (Nombre, Descripcion) VALUES (?, ?)';
         db.query(insertQuery, [nombre, descripcion], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: 'Rol creado con éxito', id: result.insertId });
@@ -116,7 +112,7 @@ app.post('/api/roles', (req, res) => {
 app.put('/api/roles/:id', (req, res) => {
     const id = req.params.id;
     const { nombre, descripcion } = req.body;
-    const query = 'UPDATE Roles SET Nombre = ?, Descripcion = ? WHERE idRoles = ?';
+    const query = 'UPDATE roles SET Nombre = ?, Descripcion = ? WHERE idRoles = ?';
     db.query(query, [nombre, descripcion, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Rol actualizado con éxito' });
@@ -125,7 +121,7 @@ app.put('/api/roles/:id', (req, res) => {
 
 app.delete('/api/roles/:id', (req, res) => {
     const id = req.params.id;
-    const query = 'DELETE FROM Roles WHERE idRoles = ?';
+    const query = 'DELETE FROM roles WHERE idRoles = ?';
     db.query(query, [id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Rol eliminado con éxito' });
@@ -133,9 +129,9 @@ app.delete('/api/roles/:id', (req, res) => {
 });
 
 
-/* ================= ROUTES DE ESTATUS (GESTIÓN / CRUD CON VALIDACIÓN DE DUPLICADOS) ================= */
+/* ================= ROUTES DE ESTATUS ================= */
 app.get('/api/estatus-crud', (req, res) => {
-    db.query('SELECT idEstatus, Estatus FROM Estatus', (err, results) => {
+    db.query('SELECT idEstatus, Estatus FROM estatus', (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -143,14 +139,14 @@ app.get('/api/estatus-crud', (req, res) => {
 
 app.post('/api/estatus-crud', (req, res) => {
     const { nombre } = req.body;
-    const checkQuery = 'SELECT idEstatus FROM Estatus WHERE Estatus = ?';
+    const checkQuery = 'SELECT idEstatus FROM estatus WHERE Estatus = ?';
     db.query(checkQuery, [nombre], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
             return res.status(400).json({ error: 'Ya existe un estatus registrado con este nombre.' });
         }
 
-        db.query('INSERT INTO Estatus (Estatus) VALUES (?)', [nombre], (err, result) => {
+        db.query('INSERT INTO estatus (Estatus) VALUES (?)', [nombre], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: 'Estatus creado con éxito', id: result.insertId });
         });
@@ -160,14 +156,14 @@ app.post('/api/estatus-crud', (req, res) => {
 app.put('/api/estatus-crud/:id', (req, res) => {
     const id = req.params.id;
     const { nombre } = req.body;
-    const checkQuery = 'SELECT idEstatus FROM Estatus WHERE Estatus = ? AND idEstatus <> ?';
+    const checkQuery = 'SELECT idEstatus FROM estatus WHERE Estatus = ? AND idEstatus <> ?';
     db.query(checkQuery, [nombre, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
             return res.status(400).json({ error: 'Ya existe otro estatus registrado con este nombre.' });
         }
 
-        db.query('UPDATE Estatus SET Estatus = ? WHERE idEstatus = ?', [nombre, id], (err) => {
+        db.query('UPDATE estatus SET Estatus = ? WHERE idEstatus = ?', [nombre, id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Estatus actualizado con éxito' });
         });
@@ -176,7 +172,7 @@ app.put('/api/estatus-crud/:id', (req, res) => {
 
 app.delete('/api/estatus-crud/:id', (req, res) => {
     const id = req.params.id;
-    db.query('DELETE FROM Estatus WHERE idEstatus = ?', [id], (err) => {
+    db.query('DELETE FROM estatus WHERE idEstatus = ?', [id], (err) => {
         if (err) {
             return res.status(400).json({ error: 'No se puede eliminar el estatus: está vinculado a otros registros del sistema.' });
         }
@@ -189,8 +185,8 @@ app.delete('/api/estatus-crud/:id', (req, res) => {
 app.get('/api/usuarios', (req, res) => {
     db.query(`
         SELECT u.idUsuarios, u.Nombre, u.Apellido_paterno 
-        FROM Usuarios u
-        JOIN Estatus e ON u.Estatus_idEstatus = e.idEstatus
+        FROM usuarios u
+        JOIN estatus e ON u.Estatus_idEstatus = e.idEstatus
         WHERE e.Estatus = 'Activo'
     `, (err, results) => {
         if (err) return res.status(500).send(err);
@@ -202,8 +198,8 @@ app.get('/api/usuarios-select', (req, res) => {
     const query = `
         SELECT u.idUsuarios, 
                TRIM(CONCAT(u.Nombre, ' ', u.Apellido_paterno, ' ', IFNULL(u.Apellido_materno, ''))) AS NombreCompleto 
-        FROM Usuarios u
-        JOIN Estatus e ON u.Estatus_idEstatus = e.idEstatus
+        FROM usuarios u
+        JOIN estatus e ON u.Estatus_idEstatus = e.idEstatus
         WHERE e.Estatus = 'Activo'
     `;
     db.query(query, (err, results) => {
@@ -215,9 +211,9 @@ app.get('/api/usuarios-select', (req, res) => {
 app.get('/api/usuarios-completo', (req, res) => {
     const query = `
         SELECT u.idUsuarios, u.Roles_idRoles, u.Estatus_idEstatus, u.Nombre, u.Apellido_paterno, u.Apellido_materno, u.Correo_electronico, u.Contrasena, r.Nombre AS NombreRol, es.Estatus AS EstatusNombre
-        FROM Usuarios u
-        JOIN Roles r ON u.Roles_idRoles = r.idRoles
-        JOIN Estatus es ON u.Estatus_idEstatus = es.idEstatus
+        FROM usuarios u
+        JOIN roles r ON u.Roles_idRoles = r.idRoles
+        JOIN estatus es ON u.Estatus_idEstatus = es.idEstatus
         WHERE es.Estatus = 'Activo'
     `;
     db.query(query, (err, results) => {
@@ -229,14 +225,14 @@ app.get('/api/usuarios-completo', (req, res) => {
 app.post('/api/usuarios', (req, res) => {
     const { roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
     
-    const checkQuery = 'SELECT * FROM Usuarios WHERE Correo_electronico = ?';
+    const checkQuery = 'SELECT * FROM usuarios WHERE Correo_electronico = ?';
     db.query(checkQuery, [correo_electronico], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
             return res.status(400).json({ error: 'Ya existe un usuario registrado con este correo electrónico.' });
         }
 
-        const insertQuery = 'INSERT INTO Usuarios (Roles_idRoles, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Correo_electronico, Contrasena) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        const insertQuery = 'INSERT INTO usuarios (Roles_idRoles, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Correo_electronico, Contrasena) VALUES (?, ?, ?, ?, ?, ?, ?)';
         db.query(insertQuery, [roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: 'Usuario creado con éxito', id: result.insertId });
@@ -248,14 +244,14 @@ app.put('/api/usuarios/:id', (req, res) => {
     const id = req.params.id;
     const { roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
 
-    const checkQuery = 'SELECT * FROM Usuarios WHERE Correo_electronico = ? AND idUsuarios <> ?';
+    const checkQuery = 'SELECT * FROM usuarios WHERE Correo_electronico = ? AND idUsuarios <> ?';
     db.query(checkQuery, [correo_electronico, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
             return res.status(400).json({ error: 'El correo electrónico ya está en uso por otro usuario.' });
         }
 
-        const query = 'UPDATE Usuarios SET Roles_idRoles = ?, Estatus_idEstatus = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Correo_electronico = ?, Contrasena = ? WHERE idUsuarios = ?';
+        const query = 'UPDATE usuarios SET Roles_idRoles = ?, Estatus_idEstatus = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Correo_electronico = ?, Contrasena = ? WHERE idUsuarios = ?';
         db.query(query, [roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena, id], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Usuario actualizado con éxito' });
@@ -263,17 +259,16 @@ app.put('/api/usuarios/:id', (req, res) => {
     });
 });
 
-// RESPALDO LÓGICO (SOFT DELETE) PARA USUARIOS
 app.delete('/api/usuarios/:id', (req, res) => {
     const id = req.params.id;
 
-    db.query("SELECT idEstatus FROM Estatus WHERE Estatus = 'Inactivo' LIMIT 1", (err, estatusRes) => {
+    db.query("SELECT idEstatus FROM estatus WHERE Estatus = 'Inactivo' LIMIT 1", (err, estatusRes) => {
         if (err || estatusRes.length === 0) {
             return res.status(500).json({ error: 'No se encontró el estatus Inactivo en la base de datos.' });
         }
         const idInactivo = estatusRes[0].idEstatus;
 
-        const query = 'UPDATE Usuarios SET Estatus_idEstatus = ? WHERE idUsuarios = ?';
+        const query = 'UPDATE usuarios SET Estatus_idEstatus = ? WHERE idUsuarios = ?';
         db.query(query, [idInactivo, id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Usuario dado de baja del sistema lógicamente.' });
@@ -281,15 +276,14 @@ app.delete('/api/usuarios/:id', (req, res) => {
     });
 });
 
-// VALIDACIÓN DE LOGIN
 app.post('/api/login', (req, res) => {
     const { correo, contrasena } = req.body;
 
     const query = `
         SELECT u.idUsuarios, u.Nombre, u.Correo_electronico, r.Nombre AS Rol, e.Estatus AS EstadoEstatus
-        FROM Usuarios u
-        JOIN Roles r ON u.Roles_idRoles = r.idRoles
-        JOIN Estatus e ON u.Estatus_idEstatus = e.idEstatus
+        FROM usuarios u
+        JOIN roles r ON u.Roles_idRoles = r.idRoles
+        JOIN estatus e ON u.Estatus_idEstatus = e.idEstatus
         WHERE u.Correo_electronico = ? AND u.Contrasena = ?
     `;
 
@@ -319,10 +313,10 @@ app.get('/api/trabajadores-expedientes', (req, res) => {
                GROUP_CONCAT(DISTINCT est.Estante ORDER BY est.Estante SEPARATOR ', ') AS Estante,
                GROUP_CONCAT(DISTINCT c.Caja ORDER BY c.Caja SEPARATOR ', ') AS Caja,
                GROUP_CONCAT(DISTINCT c.Descripcion ORDER BY c.Descripcion SEPARATOR ', ') AS DescripcionCaja
-        FROM Trabajadores t
-        JOIN Documento d ON d.Trabajadores_idTrabajadores = t.idTrabajadores
-        JOIN Cajas c ON d.Cajas_idCajas = c.idCajas
-        JOIN Estantes est ON c.Estantes_idEstantes = est.idEstantes
+        FROM trabajadores t
+        JOIN documento d ON d.Trabajadores_idTrabajadores = t.idTrabajadores
+        JOIN cajas c ON d.Cajas_idCajas = c.idCajas
+        JOIN estantes est ON c.Estantes_idEstantes = est.idEstantes
         GROUP BY t.idTrabajadores, t.No_trabajador, t.Nombre, t.Apellido_paterno, t.Apellido_materno
     `;
     db.query(query, (err, results) => {
@@ -337,10 +331,10 @@ app.get('/api/prestamos', (req, res) => {
                t.No_trabajador AS Expediente,
                TRIM(CONCAT(t.Nombre, ' ', t.Apellido_paterno, ' ', IFNULL(t.Apellido_materno, ''))) AS Trabajador,
                TRIM(CONCAT(u.Nombre, ' ', u.Apellido_paterno, ' ', IFNULL(u.Apellido_materno, ''))) AS Solicitante
-        FROM Prestamo p
-        JOIN Usuarios u ON p.Usuarios_idUsuarios = u.idUsuarios
-        JOIN Documento d ON p.Documento_idDocumento = d.idDocumento
-        JOIN Trabajadores t ON d.Trabajadores_idTrabajadores = t.idTrabajadores
+        FROM prestamo p
+        JOIN usuarios u ON p.Usuarios_idUsuarios = u.idUsuarios
+        JOIN documento d ON p.Documento_idDocumento = d.idDocumento
+        JOIN trabajadores t ON d.Trabajadores_idTrabajadores = t.idTrabajadores
     `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send(err);
@@ -351,7 +345,7 @@ app.get('/api/prestamos', (req, res) => {
 app.post('/api/prestamos', (req, res) => {
     const { usuario_id, documento_id, fecha_prestamo, fecha_entrega } = req.body;
 
-    const getDocQuery = 'SELECT Trabajadores_idTrabajadores, Tipo_documento_idTipo_documento FROM Documento WHERE idDocumento = ?';
+    const getDocQuery = 'SELECT Trabajadores_idTrabajadores, Tipo_documento_idTipo_documento FROM documento WHERE idDocumento = ?';
     db.query(getDocQuery, [documento_id], (err, docs) => {
         if (err) return res.status(500).json({ error: err.message });
         if (docs.length === 0) {
@@ -361,7 +355,7 @@ app.post('/api/prestamos', (req, res) => {
         const trabajador_id = docs[0].Trabajadores_idTrabajadores;
         const tipo_documento_id = docs[0].Tipo_documento_idTipo_documento;
 
-        db.query('SELECT idPrestamo FROM Prestamo WHERE Trabajadores_idTrabajadores = ?', [trabajador_id], (err, existentes) => {
+        db.query('SELECT idPrestamo FROM prestamo WHERE Trabajadores_idTrabajadores = ?', [trabajador_id], (err, existentes) => {
             if (err) return res.status(500).json({ error: err.message });
             if (existentes.length > 0) {
                 return res.status(400).json({ error: 'Este expediente ya se encuentra actualmente prestado.' });
@@ -374,13 +368,13 @@ app.post('/api/prestamos', (req, res) => {
                     if (err) return res.status(500).json({ error: err.message });
 
                     const insertQuery = `
-                        INSERT INTO Prestamo (Usuarios_idUsuarios, Trabajadores_idTrabajadores, Tipo_documento_idTipo_documento, Documento_idDocumento, Fecha_prestamo, Fecha_entrega) 
+                        INSERT INTO prestamo (Usuarios_idUsuarios, Trabajadores_idTrabajadores, Tipo_documento_idTipo_documento, Documento_idDocumento, Fecha_prestamo, Fecha_entrega) 
                         VALUES (?, ?, ?, ?, ?, ?)
                     `;
                     db.query(insertQuery, [usuario_id, trabajador_id, tipo_documento_id, documento_id, fecha_prestamo, fecha_entrega], (err, result) => {
                         if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
 
-                        const updateQuery = 'UPDATE Documento SET Estatus_idEstatus = ? WHERE Trabajadores_idTrabajadores = ?';
+                        const updateQuery = 'UPDATE documento SET Estatus_idEstatus = ? WHERE Trabajadores_idTrabajadores = ?';
                         db.query(updateQuery, [idPrestado, trabajador_id], (err) => {
                             if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
 
@@ -399,7 +393,7 @@ app.post('/api/prestamos', (req, res) => {
 app.delete('/api/prestamos/:id', (req, res) => {
     const id = req.params.id;
 
-    db.query('SELECT Trabajadores_idTrabajadores FROM Prestamo WHERE idPrestamo = ?', [id], (err, filas) => {
+    db.query('SELECT Trabajadores_idTrabajadores FROM prestamo WHERE idPrestamo = ?', [id], (err, filas) => {
         if (err) return res.status(500).json({ error: err.message });
         if (filas.length === 0) return res.status(404).json({ error: 'El préstamo ya no existe.' });
 
@@ -411,19 +405,19 @@ app.delete('/api/prestamos/:id', (req, res) => {
             db.beginTransaction((err) => {
                 if (err) return res.status(500).json({ error: err.message });
 
-                db.query('DELETE FROM Prestamo WHERE idPrestamo = ?', [id], (err) => {
-                    if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
+                db.query('DELETE FROM prestamo WHERE idPrestamo = ?', [id], (err) => {
+                    if (err) return res.rollback(() => res.status(500).json({ error: err.message }));
 
                     const updateQuery = `
-                        UPDATE Documento SET Estatus_idEstatus = ?
+                        UPDATE documento SET Estatus_idEstatus = ?
                         WHERE Trabajadores_idTrabajadores = ?
-                          AND NOT EXISTS (SELECT 1 FROM Prestamo WHERE Trabajadores_idTrabajadores = ?)
+                          AND NOT EXISTS (SELECT 1 FROM prestamo WHERE Trabajadores_idTrabajadores = ?)
                     `;
                     db.query(updateQuery, [idDisponible, trabajador_id, trabajador_id], (err) => {
-                        if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
+                        if (err) return res.rollback(() => res.status(500).json({ error: err.message }));
 
                         db.commit((err) => {
-                            if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
+                            if (err) return res.rollback(() => res.status(500).json({ error: err.message }));
                             res.json({ message: 'Préstamo eliminado' });
                         });
                     });
@@ -436,7 +430,7 @@ app.delete('/api/prestamos/:id', (req, res) => {
 
 /* ================= ROUTES DE DEPARTAMENTOS ================= */
 app.get('/api/departamentos', (req, res) => {
-    db.query('SELECT idDepartamentos, Nombre FROM Departamentos', (err, results) => {
+    db.query('SELECT idDepartamentos, Nombre FROM departamentos', (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -444,12 +438,12 @@ app.get('/api/departamentos', (req, res) => {
 
 app.post('/api/departamentos', (req, res) => {
     const { nombre } = req.body;
-    const checkQuery = 'SELECT idDepartamentos FROM Departamentos WHERE Nombre = ?';
+    const checkQuery = 'SELECT idDepartamentos FROM departamentos WHERE Nombre = ?';
     db.query(checkQuery, [nombre], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) return res.status(400).json({ error: 'Ya existe un departamento con este nombre.' });
 
-        db.query('INSERT INTO Departamentos (Nombre) VALUES (?)', [nombre], (err, result) => {
+        db.query('INSERT INTO departamentos (Nombre) VALUES (?)', [nombre], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: 'Departamento creado con éxito', id: result.insertId });
         });
@@ -459,12 +453,12 @@ app.post('/api/departamentos', (req, res) => {
 app.put('/api/departamentos/:id', (req, res) => {
     const id = req.params.id;
     const { nombre } = req.body;
-    const checkQuery = 'SELECT idDepartamentos FROM Departamentos WHERE Nombre = ? AND idDepartamentos <> ?';
+    const checkQuery = 'SELECT idDepartamentos FROM departamentos WHERE Nombre = ? AND idDepartamentos <> ?';
     db.query(checkQuery, [nombre, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) return res.status(400).json({ error: 'Ya existe otro departamento con este nombre.' });
 
-        db.query('UPDATE Departamentos SET Nombre = ? WHERE idDepartamentos = ?', [nombre, id], (err) => {
+        db.query('UPDATE departamentos SET Nombre = ? WHERE idDepartamentos = ?', [nombre, id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Departamento actualizado con éxito' });
         });
@@ -473,13 +467,13 @@ app.put('/api/departamentos/:id', (req, res) => {
 
 app.delete('/api/departamentos/:id', (req, res) => {
     const id = req.params.id;
-    db.query('SELECT COUNT(*) AS total FROM Trabajadores WHERE Departamentos_idDepartamentos = ?', [id], (err, filas) => {
+    db.query('SELECT COUNT(*) AS total FROM trabajadores WHERE Departamentos_idDepartamentos = ?', [id], (err, filas) => {
         if (err) return res.status(500).json({ error: err.message });
         if (filas[0].total > 0) {
             return res.status(400).json({ error: `No se puede eliminar: tiene ${filas[0].total} trabajador(es) asociado(s).` });
         }
 
-        db.query('DELETE FROM Departamentos WHERE idDepartamentos = ?', [id], (err) => {
+        db.query('DELETE FROM departamentos WHERE idDepartamentos = ?', [id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Departamento eliminado' });
         });
@@ -489,7 +483,7 @@ app.delete('/api/departamentos/:id', (req, res) => {
 
 /* ================= ROUTES DE TRABAJADORES ================= */
 app.get('/api/estatus', (req, res) => {
-    db.query('SELECT idEstatus, Estatus FROM Estatus WHERE Estatus NOT IN (?, ?)', [ESTATUS_DISPONIBLE, ESTATUS_PRESTADO], (err, results) => {
+    db.query('SELECT idEstatus, Estatus FROM estatus WHERE Estatus NOT IN (?, ?)', [ESTATUS_DISPONIBLE, ESTATUS_PRESTADO], (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -501,9 +495,9 @@ app.get('/api/trabajadores-completo', (req, res) => {
                t.No_trabajador, t.Fecha_ingreso, 
                d.Nombre AS Departamento, e.Estatus,
                t.Departamentos_idDepartamentos, t.Estatus_idEstatus
-        FROM Trabajadores t
-        JOIN Departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
-        JOIN Estatus e ON t.Estatus_idEstatus = e.idEstatus
+        FROM trabajadores t
+        JOIN departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
+        JOIN estatus e ON t.Estatus_idEstatus = e.idEstatus
     `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send(err);
@@ -513,13 +507,13 @@ app.get('/api/trabajadores-completo', (req, res) => {
 
 app.post('/api/trabajadores', (req, res) => {
     const { departamentos_idDepartamentos, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, fecha_ingreso, no_trabajador } = req.body;
-    const checkQuery = 'SELECT * FROM Trabajadores WHERE No_trabajador = ?';
+    const checkQuery = 'SELECT * FROM trabajadores WHERE No_trabajador = ?';
     db.query(checkQuery, [no_trabajador], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) return res.status(400).json({ error: 'Ya existe un trabajador registrado con este número de matrícula.' });
 
         const insertQuery = `
-            INSERT INTO Trabajadores (Departamentos_idDepartamentos, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Fecha_ingreso, No_trabajador) 
+            INSERT INTO trabajadores (Departamentos_idDepartamentos, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Fecha_ingreso, No_trabajador) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
         db.query(insertQuery, [departamentos_idDepartamentos, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, fecha_ingreso, no_trabajador], (err, result) => {
@@ -533,7 +527,7 @@ app.put('/api/trabajadores/:id', (req, res) => {
     const id = req.params.id;
     const { departamentos_idDepartamentos, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, fecha_ingreso, no_trabajador } = req.body;
     const query = `
-        UPDATE Trabajadores 
+        UPDATE trabajadores 
         SET Departamentos_idDepartamentos = ?, Estatus_idEstatus = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Fecha_ingreso = ?, No_trabajador = ? 
         WHERE idTrabajadores = ?
     `;
@@ -545,7 +539,7 @@ app.put('/api/trabajadores/:id', (req, res) => {
 
 app.delete('/api/trabajadores/:id', (req, res) => {
     const id = req.params.id;
-    const query = 'DELETE FROM Trabajadores WHERE idTrabajadores = ?';
+    const query = 'DELETE FROM trabajadores WHERE idTrabajadores = ?';
     db.query(query, [id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Trabajador eliminado con éxito' });
@@ -561,9 +555,9 @@ app.get('/api/trabajadores/reporte', (req, res) => {
                t.Apellido_materno AS apellidoMaterno, t.No_trabajador AS numero, 
                d.Nombre AS departamento, t.Fecha_ingreso AS fechaIngreso, 
                e.Estatus AS estatus
-        FROM Trabajadores t
-        JOIN Departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
-        JOIN Estatus e ON t.Estatus_idEstatus = e.idEstatus
+        FROM trabajadores t
+        JOIN departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
+        JOIN estatus e ON t.Estatus_idEstatus = e.idEstatus
         WHERE 1=1
     `;
     const params = [];
@@ -592,9 +586,9 @@ app.get('/api/trabajadores/:id/documentos', (req, res) => {
     const qTrabajador = `
         SELECT t.Nombre AS nombre, t.Apellido_paterno AS apellidoPaterno, t.Apellido_materno AS apellidoMaterno, 
                t.No_trabajador AS numero, d.Nombre AS departamento, e.Estatus AS estatus
-        FROM Trabajadores t
-        JOIN Departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
-        JOIN Estatus e ON t.Estatus_idEstatus = e.idEstatus
+        FROM trabajadores t
+        JOIN departamentos d ON t.Departamentos_idDepartamentos = d.idDepartamentos
+        JOIN estatus e ON t.Estatus_idEstatus = e.idEstatus
         WHERE t.idTrabajadores = ?
     `;
     db.query(qTrabajador, [id], (err, tRes) => {
@@ -604,11 +598,11 @@ app.get('/api/trabajadores/:id/documentos', (req, res) => {
         const qDocs = `
             SELECT td.Nombre AS tipo, es.Estatus AS estatus, 
                    CONCAT('Estante: ', est.Estante, ' / Caja: ', c.Caja) AS ubicacion, doc.Foto AS foto
-            FROM Documento doc
-            JOIN Tipo_documento td ON doc.Tipo_documento_idTipo_documento = td.idTipo_documento
-            JOIN Estatus es ON doc.Estatus_idEstatus = es.idEstatus
-            JOIN Cajas c ON doc.Cajas_idCajas = c.idCajas
-            JOIN Estantes est ON c.Estantes_idEstantes = est.idEstantes
+            FROM documento doc
+            JOIN tipo_documento td ON doc.Tipo_documento_idTipo_documento = td.idTipo_documento
+            JOIN estatus es ON doc.Estatus_idEstatus = es.idEstatus
+            JOIN cajas c ON doc.Cajas_idCajas = c.idCajas
+            JOIN estantes est ON c.Estantes_idEstantes = est.idEstantes
             WHERE doc.Trabajadores_idTrabajadores = ?
         `;
         db.query(qDocs, [id], (err, dRes) => {
@@ -621,7 +615,7 @@ app.get('/api/trabajadores/:id/documentos', (req, res) => {
 
 /* ================= ROUTES DE TIPOS DE DOCUMENTO ================= */
 app.get('/api/tipos-documento', (req, res) => {
-    db.query('SELECT idTipo_documento, Nombre, Descripcion FROM Tipo_documento', (err, results) => {
+    db.query('SELECT idTipo_documento, Nombre, Descripcion FROM tipo_documento', (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -629,12 +623,12 @@ app.get('/api/tipos-documento', (req, res) => {
 
 app.post('/api/tipos-documento', (req, res) => {
     const { nombre, descripcion } = req.body;
-    const checkQuery = 'SELECT idTipo_documento FROM Tipo_documento WHERE Nombre = ?';
+    const checkQuery = 'SELECT idTipo_documento FROM tipo_documento WHERE Nombre = ?';
     db.query(checkQuery, [nombre], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) return res.status(400).json({ error: 'Ya existe un tipo de documento registrado con este nombre.' });
 
-        const query = 'INSERT INTO Tipo_documento (Nombre, Descripcion) VALUES (?, ?)';
+        const query = 'INSERT INTO tipo_documento (Nombre, Descripcion) VALUES (?, ?)';
         db.query(query, [nombre, descripcion], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ message: 'Tipo de documento creado con éxito', id: result.insertId });
@@ -645,12 +639,12 @@ app.post('/api/tipos-documento', (req, res) => {
 app.put('/api/tipos-documento/:id', (req, res) => {
     const id = req.params.id;
     const { nombre, descripcion } = req.body;
-    const checkQuery = 'SELECT idTipo_documento FROM Tipo_documento WHERE Nombre = ? AND idTipo_documento <> ?';
+    const checkQuery = 'SELECT idTipo_documento FROM tipo_documento WHERE Nombre = ? AND idTipo_documento <> ?';
     db.query(checkQuery, [nombre, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) return res.status(400).json({ error: 'Ya existe un tipo de documento registrado con este nombre.' });
 
-        const query = 'UPDATE Tipo_documento SET Nombre = ?, Descripcion = ? WHERE idTipo_documento = ?';
+        const query = 'UPDATE tipo_documento SET Nombre = ?, Descripcion = ? WHERE idTipo_documento = ?';
         db.query(query, [nombre, descripcion, id], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Tipo de documento actualizado con éxito' });
@@ -660,7 +654,7 @@ app.put('/api/tipos-documento/:id', (req, res) => {
 
 app.delete('/api/tipos-documento/:id', (req, res) => {
     const id = req.params.id;
-    db.query('DELETE FROM Tipo_documento WHERE idTipo_documento = ?', [id], (err, result) => {
+    db.query('DELETE FROM tipo_documento WHERE idTipo_documento = ?', [id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Tipo de documento eliminado con éxito' });
     });
@@ -669,7 +663,7 @@ app.delete('/api/tipos-documento/:id', (req, res) => {
 
 /* ================= ROUTES DE ESTANTES ================= */
 app.get('/api/estantes', (req, res) => {
-    db.query('SELECT idEstantes, Estante, Descripcion FROM Estantes', (err, results) => {
+    db.query('SELECT idEstantes, Estante, Descripcion FROM estantes', (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -677,7 +671,7 @@ app.get('/api/estantes', (req, res) => {
 
 app.post('/api/estantes', (req, res) => {
     const { estante, descripcion } = req.body;
-    const query = 'INSERT INTO Estantes (Estante, Descripcion) VALUES (?, ?)';
+    const query = 'INSERT INTO estantes (Estante, Descripcion) VALUES (?, ?)';
     db.query(query, [estante, descripcion], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.status(201).json({ message: 'Estante registrado con éxito', id: result.insertId });
@@ -687,7 +681,7 @@ app.post('/api/estantes', (req, res) => {
 app.put('/api/estantes/:id', (req, res) => {
     const id = req.params.id;
     const { estante, descripcion } = req.body;
-    const query = 'UPDATE Estantes SET Estante = ?, Descripcion = ? WHERE idEstantes = ?';
+    const query = 'UPDATE estantes SET Estante = ?, Descripcion = ? WHERE idEstantes = ?';
     db.query(query, [estante, descripcion, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Estante actualizado con éxito' });
@@ -696,7 +690,7 @@ app.put('/api/estantes/:id', (req, res) => {
 
 app.delete('/api/estantes/:id', (req, res) => {
     const id = req.params.id;
-    db.query('SELECT COUNT(*) AS total FROM Cajas WHERE Estantes_idEstantes = ?', [id], (err, filas) => {
+    db.query('SELECT COUNT(*) AS total FROM cajas WHERE Estantes_idEstantes = ?', [id], (err, filas) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (filas[0].total > 0) {
@@ -705,7 +699,7 @@ app.delete('/api/estantes/:id', (req, res) => {
             });
         }
 
-        db.query('DELETE FROM Estantes WHERE idEstantes = ?', [id], (err, result) => {
+        db.query('DELETE FROM estantes WHERE idEstantes = ?', [id], (err, result) => {
             if (err) {
                 if (err.code === 'ER_ROW_IS_REFERENCED_2') {
                     return res.status(400).json({ error: 'No se puede eliminar el estante: tiene registros relacionados.' });
@@ -720,7 +714,7 @@ app.delete('/api/estantes/:id', (req, res) => {
 
 /* ================= ROUTES DE CAJAS ================= */
 app.get('/api/cajas', (req, res) => {
-    db.query('SELECT idCajas, Estantes_idEstantes, Caja, Descripcion FROM Cajas', (err, results) => {
+    db.query('SELECT idCajas, Estantes_idEstantes, Caja, Descripcion FROM cajas', (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -728,7 +722,7 @@ app.get('/api/cajas', (req, res) => {
 
 app.post('/api/cajas', (req, res) => {
     const { estantes_idEstantes, caja, descripcion } = req.body;
-    const query = 'INSERT INTO Cajas (Estantes_idEstantes, Caja, Descripcion) VALUES (?, ?, ?)';
+    const query = 'INSERT INTO cajas (Estantes_idEstantes, Caja, Descripcion) VALUES (?, ?, ?)';
     db.query(query, [estantes_idEstantes, caja, descripcion], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.status(201).json({ message: 'Caja registrada con éxito', id: result.insertId });
@@ -738,7 +732,7 @@ app.post('/api/cajas', (req, res) => {
 app.put('/api/cajas/:id', (req, res) => {
     const id = req.params.id;
     const { estantes_idEstantes, caja, descripcion } = req.body;
-    const query = 'UPDATE Cajas SET Estantes_idEstantes = ?, Caja = ?, Descripcion = ? WHERE idCajas = ?';
+    const query = 'UPDATE cajas SET Estantes_idEstantes = ?, Caja = ?, Descripcion = ? WHERE idCajas = ?';
     db.query(query, [estantes_idEstantes, caja, descripcion, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Caja actualizada con éxito' });
@@ -747,7 +741,7 @@ app.put('/api/cajas/:id', (req, res) => {
 
 app.delete('/api/cajas/:id', (req, res) => {
     const id = req.params.id;
-    db.query('SELECT COUNT(*) AS total FROM Documento WHERE Cajas_idCajas = ?', [id], (err, filas) => {
+    db.query('SELECT COUNT(*) AS total FROM documento WHERE Cajas_idCajas = ?', [id], (err, filas) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (filas[0].total > 0) {
@@ -756,7 +750,7 @@ app.delete('/api/cajas/:id', (req, res) => {
             });
         }
 
-        db.query('DELETE FROM Cajas WHERE idCajas = ?', [id], (err, result) => {
+        db.query('DELETE FROM cajas WHERE idCajas = ?', [id], (err, result) => {
             if (err) {
                 if (err.code === 'ER_ROW_IS_REFERENCED_2') {
                     return res.status(400).json({ error: 'No se puede eliminar la caja: tiene registros relacionados.' });
@@ -777,12 +771,12 @@ app.get('/api/documentos-completo', (req, res) => {
                c.Caja, est.Estante, est.idEstantes AS Estantes_idEstantes,
                td.Nombre AS TipoDocumento,
                es.Estatus AS EstatusNombre
-        FROM Documento d
-        JOIN Trabajadores t ON d.Trabajadores_idTrabajadores = t.idTrabajadores
-        JOIN Cajas c ON d.Cajas_idCajas = c.idCajas
-        JOIN Estantes est ON c.Estantes_idEstantes = est.idEstantes
-        JOIN Tipo_documento td ON d.Tipo_documento_idTipo_documento = td.idTipo_documento
-        LEFT JOIN Estatus es ON d.Estatus_idEstatus = es.idEstatus
+        FROM documento d
+        JOIN trabajadores t ON d.Trabajadores_idTrabajadores = t.idTrabajadores
+        JOIN cajas c ON d.Cajas_idCajas = c.idCajas
+        JOIN estantes est ON c.Estantes_idEstantes = est.idEstantes
+        JOIN tipo_documento td ON d.Tipo_documento_idTipo_documento = td.idTipo_documento
+        LEFT JOIN estatus es ON d.Estatus_idEstatus = es.idEstatus
     `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send(err);
@@ -794,7 +788,7 @@ app.post('/api/documentos', subirArchivo, (req, res) => {
     const { cajas_idCajas, trabajadores_idTrabajadores, tipo_documento_idTipo_documento } = req.body;
     const foto = req.file ? req.file.filename : null;
 
-    const checkQuery = 'SELECT idDocumento FROM Documento WHERE Trabajadores_idTrabajadores = ? AND Tipo_documento_idTipo_documento = ?';
+    const checkQuery = 'SELECT idDocumento FROM documento WHERE Trabajadores_idTrabajadores = ? AND Tipo_documento_idTipo_documento = ?';
     db.query(checkQuery, [trabajadores_idTrabajadores, tipo_documento_idTipo_documento], (err, repetidos) => {
         if (err) {
             borrarArchivoSubido(req);
@@ -812,7 +806,7 @@ app.post('/api/documentos', subirArchivo, (req, res) => {
             }
 
             const insertQuery = `
-                INSERT INTO Documento (Cajas_idCajas, Estatus_idEstatus, Trabajadores_idTrabajadores, Tipo_documento_idTipo_documento, Foto) 
+                INSERT INTO documento (Cajas_idCajas, Estatus_idEstatus, Trabajadores_idTrabajadores, Tipo_documento_idTipo_documento, Foto) 
                 VALUES (?, ?, ?, ?, ?)
             `;
             db.query(insertQuery, [cajas_idCajas, idDisponible, trabajadores_idTrabajadores, tipo_documento_idTipo_documento, foto], (err, result) => {
@@ -830,7 +824,7 @@ app.put('/api/documentos/:id', subirArchivo, (req, res) => {
     const id = req.params.id;
     const { cajas_idCajas, trabajadores_idTrabajadores, tipo_documento_idTipo_documento } = req.body;
 
-    const checkQuery = 'SELECT idDocumento FROM Documento WHERE Trabajadores_idTrabajadores = ? AND Tipo_documento_idTipo_documento = ? AND idDocumento <> ?';
+    const checkQuery = 'SELECT idDocumento FROM documento WHERE Trabajadores_idTrabajadores = ? AND Tipo_documento_idTipo_documento = ? AND idDocumento <> ?';
     db.query(checkQuery, [trabajadores_idTrabajadores, tipo_documento_idTipo_documento, id], (err, repetidos) => {
         if (err) {
             borrarArchivoSubido(req);
@@ -842,7 +836,7 @@ app.put('/api/documentos/:id', subirArchivo, (req, res) => {
         }
 
         let query = `
-            UPDATE Documento 
+            UPDATE documento 
             SET Cajas_idCajas = ?, Trabajadores_idTrabajadores = ?, Tipo_documento_idTipo_documento = ?`;
         const valores = [cajas_idCajas, trabajadores_idTrabajadores, tipo_documento_idTipo_documento];
 
@@ -868,8 +862,8 @@ app.delete('/api/documentos/:id', (req, res) => {
     const id = req.params.id;
     const prestadoQuery = `
         SELECT COUNT(*) AS total
-        FROM Prestamo p
-        JOIN Documento d ON d.Trabajadores_idTrabajadores = p.Trabajadores_idTrabajadores
+        FROM prestamo p
+        JOIN documento d ON d.Trabajadores_idTrabajadores = p.Trabajadores_idTrabajadores
         WHERE d.idDocumento = ?
     `;
     db.query(prestadoQuery, [id], (err, filas) => {
@@ -879,7 +873,7 @@ app.delete('/api/documentos/:id', (req, res) => {
             return res.status(400).json({ error: 'No se puede eliminar el documento: el expediente de este trabajador está prestado.' });
         }
 
-        db.query('DELETE FROM Documento WHERE idDocumento = ?', [id], (err, result) => {
+        db.query('DELETE FROM documento WHERE idDocumento = ?', [id], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Documento eliminado con éxito' });
         });
