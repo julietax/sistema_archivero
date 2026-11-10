@@ -766,18 +766,25 @@ app.delete('/api/cajas/:id', (req, res) => {
 /* ================= ROUTES DE DOCUMENTOS ================= */
 app.get('/api/documentos-completo', (req, res) => {
     const query = `
-        SELECT d.idDocumento, d.Cajas_idCajas, d.Estatus_idEstatus, d.Trabajadores_idTrabajadores, d.Tipo_documento_idTipo_documento, d.Foto,
-               TRIM(CONCAT(t.Nombre, ' ', t.Apellido_paterno, ' ', IFNULL(t.Apellido_materno, ''))) AS Trabajador,
-               c.Caja, est.Estante, est.idEstantes AS Estantes_idEstantes,
-               td.Nombre AS TipoDocumento,
-               es.Estatus AS EstatusNombre
-        FROM documento d
-        JOIN trabajadores t ON d.Trabajadores_idTrabajadores = t.idTrabajadores
-        JOIN cajas c ON d.Cajas_idCajas = c.idCajas
-        JOIN estantes est ON c.Estantes_idEstantes = est.idEstantes
-        JOIN tipo_documento td ON d.Tipo_documento_idTipo_documento = td.idTipo_documento
-        LEFT JOIN estatus es ON d.Estatus_idEstatus = es.idEstatus
-    `;
+    SELECT d.idDocumento, d.Cajas_idCajas, d.Estatus_idEstatus,
+           d.Trabajadores_idTrabajadores, d.Tipo_documento_idTipo_documento,
+           d.Foto,
+           TRIM(CONCAT(t.Nombre, ' ', t.Apellido_paterno, ' ', IFNULL(t.Apellido_materno, ''))) AS Trabajador,
+           t.No_trabajador AS NoTrabajador,
+           dep.Nombre AS Departamento,
+           c.Caja,
+           est.Estante,
+           est.idEstantes AS Estantes_idEstantes,
+           td.Nombre AS TipoDocumento,
+           es.Estatus AS EstatusNombre
+    FROM documento d
+    JOIN trabajadores t ON d.Trabajadores_idTrabajadores = t.idTrabajadores
+    JOIN departamentos dep ON t.Departamentos_idDepartamentos = dep.idDepartamentos
+    JOIN cajas c ON d.Cajas_idCajas = c.idCajas
+    JOIN estantes est ON c.Estantes_idEstantes = est.idEstantes
+    JOIN tipo_documento td ON d.Tipo_documento_idTipo_documento = td.idTipo_documento
+    LEFT JOIN estatus es ON d.Estatus_idEstatus = es.idEstatus
+`;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);

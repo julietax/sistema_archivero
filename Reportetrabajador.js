@@ -105,9 +105,19 @@ function fechaHoraActual() {
 async function generarReporte() {
     await buscar(); // asegura que el reporte coincida con los filtros actuales
 
-    const estatusTxt = filtroEstatus.value
-        ? filtroEstatus.options[filtroEstatus.selectedIndex].text.toLowerCase() + 's'
-        : '';
+    const PLURAL_ESTATUS = {
+    'activo': 'activos',
+    'incapacidad': 'incapacitados',
+    'baja': 'dados de baja',
+    'licencia': 'con licencia',
+    'jubilado': 'jubilados'
+};
+
+let estatusTxt = '';
+if (filtroEstatus.value) {
+    const nombre = filtroEstatus.options[filtroEstatus.selectedIndex].text.trim().toLowerCase();
+    estatusTxt = PLURAL_ESTATUS[nombre] || `con estatus ${nombre}`;
+}
 
     let descripcion = `Reporte de trabajadores ${estatusTxt}`.trim();
     if (fechaDesde.value && fechaHasta.value) {

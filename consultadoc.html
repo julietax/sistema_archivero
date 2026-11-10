@@ -427,7 +427,7 @@
     <div class="nav-section">
         <div class="nav-section-title">Documentos <span>▲</span></div>
         <ul class="nav-sublist">
-            <li><a href="#">Consulta y reporte</a></li>
+            <li><a href="consultadoc.html">Consulta y reporte</a></li>
             <li><a href="documento.html">Registro documentos</a></li>
             <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
             <li><a href="prestamo.html">Préstamos</a></li>
@@ -448,25 +448,19 @@
 
         <section class="filtros">
 
-            <div class="campo">
-                <label for="tipoDocumento">Tipo de documento</label>
-                <select id="tipoDocumento">
-                    <option value="">Todos</option>
-                    <option value="Contrato">Contrato</option>
-                    <option value="Acta de nacimiento">Acta de nacimiento</option>
-                    <option value="Identificación oficial">Identificación oficial</option>
-                </select>
-            </div>
-
-            <div class="campo">
-                <label for="departamento">Departamento</label>
-                <select id="departamento">
-                    <option value="">Todos</option>
-                    <option value="Finanzas">Finanzas</option>
-                    <option value="Recursos Humanos">Recursos Humanos</option>
-                    <option value="Dirección">Dirección</option>
-                </select>
-            </div>
+            
+                <div class="campo">
+                    <label for="tipoDocumento">Tipo de documento</label>
+                        <select id="tipoDocumento">
+                      <option value="">Todos</option>
+                 </select>
+                </div>
+                <div class="campo">
+                     <label for="departamento">Departamento</label>
+                        <select id="departamento">
+                             <option value="">Todos</option>
+                              </select>
+                </div>
 
             <div class="campo">
                 <label for="estatus">Estatus</label>
@@ -519,12 +513,97 @@
     </main>
 
     <script>
-       const documentos = [];
+    const API_BASE =
+    (window.location.hostname === "localhost" ||
+     window.location.hostname === "127.0.0.1")
+        ? "http://localhost:3000"
+        : window.location.origin;
+       let documentos = [];
+       async function cargarDocumentos() {
+    try {
+        const respuesta = await fetch("http://localhost:3000/api/documentos-completo");
+
+        if (!respuesta.ok) {
+            throw new Error("Error al consultar los documentos");
+        }
+
+        const datos = await respuesta.json();
+
+        documentos = datos.map(doc => ({
+            id: doc.idDocumento,
+            tipo: doc.TipoDocumento || "No registrado",
+            trabajador: doc.Trabajador || "No registrado",
+            departamento: doc.Departamento || "No registrado",
+            estatus: doc.EstatusNombre || "No registrado",
+            ubicacion: `${doc.Caja || ""} - ${doc.Estante || ""}`,
+            numTrabajador: doc.NoTrabajador || "No registrado",
+            foto: doc.Foto || ""
+        }));
+
+        mostrarDocumentos(documentos);
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("No se pudieron cargar los documentos de la base de datos.");
+    }
+}
 
         const tipo = document.getElementById("tipoDocumento");
         const departamento = document.getElementById("departamento");
-        const estatus = document.getElementById("estatus");
-        const lista = document.getElementById("listaDocumentos");
+        async function cargarDepartamentos() {
+    try {
+        const respuesta = await fetch("http://localhost:3000/api/departamentos");
+
+        if (!respuesta.ok) {
+            throw new Error("Error al cargar departamentos");
+        }
+
+        const datos = await respuesta.json();
+
+        departamento.innerHTML = '<option value="">Todos</option>';
+
+        datos.forEach(dep => {
+            const opcion = document.createElement("option");
+            opcion.value = dep.Nombre;
+            opcion.textContent = dep.Nombre;
+            departamento.appendChild(opcion);
+        }
+        
+         );
+
+        } catch (error) {
+        console.error("Error al cargar departamentos:", error);
+        alert("No se pudieron cargar los departamentos.");
+    }
+}
+
+async function cargarTiposDocumento() {
+    try {
+        const respuesta = await fetch("http://localhost:3000/api/tipos-documento");
+
+        if (!respuesta.ok) {
+            throw new Error("Error al cargar tipos de documento");
+        }
+
+        const datos = await respuesta.json();
+
+        tipo.innerHTML = '<option value="">Todos</option>';
+
+        datos.forEach(doc => {
+            const opcion = document.createElement("option");
+            opcion.value = doc.Nombre;
+            opcion.textContent = doc.Nombre;
+            tipo.appendChild(opcion);
+        });
+
+    } catch (error) {
+        console.error("Error al cargar tipos:", error);
+        alert("No se pudieron cargar los tipos de documento.");
+    }
+}
+
+const estatus = document.getElementById("estatus");
+const lista = document.getElementById("listaDocumentos");
 
         function mostrarDocumentos(datos) {
             lista.replaceChildren();
@@ -566,36 +645,17 @@
                 botonImagen.title = "Ver imagen del documento";
                 botonImagen.setAttribute("aria-label", "Ver imagen del documento");
 
-                botonImagen.addEventListener("click", () => {
-    const inputImagen = document.createElement("input");
+               botonImagen.addEventListener("click", () => {
 
-    inputImagen.type = "file";
-    inputImagen.accept = "image/*";
+    if (!documento.foto) {
+        alert("Este documento no tiene un archivo registrado.");
+        return;
+    }
 
-    inputImagen.addEventListener("change", (evento) => {
-        const archivo = evento.target.files[0];
+    const rutaArchivo = `${API_BASE}/uploads/${encodeURIComponent(documento.foto)}`;
 
-        if (!archivo) {
-            return;
-        }
+    window.open(rutaArchivo, "_blank");
 
-        const imagen = URL.createObjectURL(archivo);
-
-        const ventana = window.open("", "_blank", "width=700,height=600");
-
-        ventana.document.write(`
-            <html>
-            <head>
-                <title>Imagen del documento</title>
-            </head>
-            <body style="margin:0; display:flex; justify-content:center; align-items:center; background:#222;">
-                <img src="${imagen}" style="max-width:90%; max-height:90%; object-fit:contain;">
-            </body>
-            </html>
-        `);
-    });
-
-    inputImagen.click();
 });
 
                 celdaImagen.appendChild(botonImagen);
@@ -791,8 +851,12 @@ logo.src = "logo.png";
 } catch (error) {
     alert("Error al generar el reporte: " + error.message);
 }
-});
-mostrarDocumentos(documentos);
+}
+
+);
+cargarDocumentos();
+cargarDepartamentos();
+cargarTiposDocumento();
 </script>
 <script src="sidebar.js"></script>
 
