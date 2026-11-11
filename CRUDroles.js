@@ -71,6 +71,8 @@ db.connect((err) => {
 // ==========================================
 const ESTATUS_DISPONIBLE = 'Disponible';
 const ESTATUS_PRESTADO = 'Prestado';
+const ESTATUS_ACTIVO = 'Activo';
+const ESTATUS_INACTIVO = 'Inactivo';
 
 function obtenerIdEstatus(nombre, callback) {
     db.query('SELECT idEstatus FROM estatus WHERE Estatus = ? LIMIT 1', [nombre], (err, filas) => {
@@ -223,37 +225,54 @@ app.get('/api/usuarios-completo', (req, res) => {
 });
 
 app.post('/api/usuarios', (req, res) => {
-    const { roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
-    
-    const checkQuery = 'SELECT * FROM usuarios WHERE Correo_electronico = ?';
+    const { roles_idRoles, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
+
+    // Buscamos el correo y vemos en qué estatus está
+    const checkQuery = `
+        SELECT u.idUsuarios, e.Estatus
+        FROM usuarios u
+        LEFT JOIN estatus e ON u.Estatus_idEstatus = e.idEstatus
+        WHERE u.Correo_electronico = ?
+    `;
     db.query(checkQuery, [correo_electronico], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
+
         if (results.length > 0) {
+            if (results[0].Estatus === ESTATUS_INACTIVO) {
+                return res.status(400).json({ error: 'Este correo pertenece a un usuario dado de baja (inactivo). Pide que lo reactiven.' });
+            }
             return res.status(400).json({ error: 'Ya existe un usuario registrado con este correo electrónico.' });
         }
 
-        const insertQuery = 'INSERT INTO usuarios (Roles_idRoles, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Correo_electronico, Contrasena) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        db.query(insertQuery, [roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena], (err, result) => {
+        // El usuario nuevo siempre se crea como Activo
+        obtenerIdEstatus(ESTATUS_ACTIVO, (err, idActivo) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Usuario creado con éxito', id: result.insertId });
+
+            const insertQuery = 'INSERT INTO usuarios (Roles_idRoles, Estatus_idEstatus, Nombre, Apellido_paterno, Apellido_materno, Correo_electronico, Contrasena) VALUES (?, ?, ?, ?, ?, ?, ?)';
+            db.query(insertQuery, [roles_idRoles, idActivo, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena], (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.status(201).json({ message: 'Usuario creado con éxito', id: result.insertId });
+            });
         });
     });
 });
 
 app.put('/api/usuarios/:id', (req, res) => {
     const id = req.params.id;
-    const { roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
+    const { roles_idRoles, nombre, apellido_paterno, apellido_materno, correo_electronico, contrasena } = req.body;
 
-    const checkQuery = 'SELECT * FROM usuarios WHERE Correo_electronico = ? AND idUsuarios <> ?';
+    const checkQuery = 'SELECT idUsuarios FROM usuarios WHERE Correo_electronico = ? AND idUsuarios <> ?';
     db.query(checkQuery, [correo_electronico, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
             return res.status(400).json({ error: 'El correo electrónico ya está en uso por otro usuario.' });
         }
 
-        const query = 'UPDATE usuarios SET Roles_idRoles = ?, Estatus_idEstatus = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Correo_electronico = ?, Contrasena = ? WHERE idUsuarios = ?';
-        db.query(query, [roles_idRoles, estatus_idEstatus, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena, id], (err, result) => {
+        // Aquí NO se toca el estatus, solo los datos del usuario
+        const query = 'UPDATE usuarios SET Roles_idRoles = ?, Nombre = ?, Apellido_paterno = ?, Apellido_materno = ?, Correo_electronico = ?, Contrasena = ? WHERE idUsuarios = ?';
+        db.query(query, [roles_idRoles, nombre, apellido_paterno, apellido_materno || null, correo_electronico, contrasena, id], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
+            if (result.affectedRows === 0) return res.status(404).json({ error: 'El usuario ya no existe.' });
             res.json({ message: 'Usuario actualizado con éxito' });
         });
     });
@@ -262,16 +281,15 @@ app.put('/api/usuarios/:id', (req, res) => {
 app.delete('/api/usuarios/:id', (req, res) => {
     const id = req.params.id;
 
-    db.query("SELECT idEstatus FROM estatus WHERE Estatus = 'Inactivo' LIMIT 1", (err, estatusRes) => {
-        if (err || estatusRes.length === 0) {
-            return res.status(500).json({ error: 'No se encontró el estatus Inactivo en la base de datos.' });
-        }
-        const idInactivo = estatusRes[0].idEstatus;
+    // Baja lógica: el usuario no se borra, solo pasa a Inactivo
+    obtenerIdEstatus(ESTATUS_INACTIVO, (err, idInactivo) => {
+        if (err) return res.status(500).json({ error: err.message });
 
         const query = 'UPDATE usuarios SET Estatus_idEstatus = ? WHERE idUsuarios = ?';
-        db.query(query, [idInactivo, id], (err) => {
+        db.query(query, [idInactivo, id], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Usuario dado de baja del sistema lógicamente.' });
+            if (result.affectedRows === 0) return res.status(404).json({ error: 'El usuario ya no existe.' });
+            res.json({ message: 'Usuario dado de baja del sistema (queda inactivo en la base de datos).' });
         });
     });
 });
