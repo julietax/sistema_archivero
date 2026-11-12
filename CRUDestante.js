@@ -97,6 +97,19 @@ form.addEventListener('submit', async function(e) {
     const estante = nombreEstanteInput.value.trim();
     const descripcion = descripcionEstanteInput.value.trim();
 
+    // Validación de nombres duplicados de estantes
+    const normalizar = texto => texto.trim().replace(/\s+/g, ' ').toLowerCase();
+    const nombreDuplicado = estantes.some(item =>
+        normalizar(item.Estante) === normalizar(estante) &&
+        String(item.idEstantes) !== String(id)
+    );
+
+    if (nombreDuplicado) {
+        mostrarAlertaSistema('Ya existe un estante registrado con ese nombre. Elige otro.');
+        nombreEstanteInput.focus();
+        return;
+    }
+
     const payload = { estante, descripcion };
 
     try {
@@ -143,7 +156,8 @@ window.eliminarEstante = function(id) {
                 limpiarFormulario();
                 await cargarEstantes();
             } else {
-                mostrarAlertaSistema("No se pudo eliminar el estante (puede tener cajas asociadas).");
+                const err = await response.json().catch(() => ({}));
+                mostrarAlertaSistema(err.error || "No se pudo eliminar el estante (puede tener cajas asociadas).");
             }
         } catch (error) {
             console.error("Error al eliminar:", error);

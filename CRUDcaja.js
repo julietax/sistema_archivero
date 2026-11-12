@@ -105,8 +105,23 @@ form.addEventListener('submit', async function(e) {
 
     const id = idCajasInput.value;
     const caja = nombreCajaInput.value.trim();
-    const descripcion = descripcionCajaInput.value.trim();
+    const idEstante = idEstantesFK;
 
+    // Validación de nombres duplicados de cajas dentro del mismo estante
+    const normalizar = texto => texto.trim().replace(/\s+/g, ' ').toLowerCase();
+    const cajaDuplicada = cajas.some(item =>
+        normalizar(item.Caja) === normalizar(caja) &&
+        String(item.Estantes_idEstantes) === String(idEstante) &&
+        String(item.idCajas) !== String(id)
+    );
+
+    if (cajaDuplicada) {
+        mostrarAlertaSistema("Ya existe una caja con ese nombre en este estante. Elige otro.");
+        nombreCajaInput.focus();
+        return;
+    }
+
+    const descripcion = descripcionCajaInput.value.trim();
     const payload = { estantes_idEstantes: idEstantesFK, caja, descripcion };
 
     try {
@@ -153,7 +168,8 @@ window.eliminarCaja = function(id) {
                 limpiarFormulario();
                 await cargarCajas();
             } else {
-                mostrarAlertaSistema("No se pudo eliminar la caja (puede estar asignada a un documento).");
+                const err = await response.json().catch(() => ({}));
+                mostrarAlertaSistema(err.error || "No se pudo eliminar la caja (puede estar asignada a un documento).");
             }
         } catch (error) {
             console.error("Error al eliminar:", error);

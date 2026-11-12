@@ -17,6 +17,20 @@ const modalMensaje = document.getElementById('modalMensaje');
 const btnModalAceptar = document.getElementById('btnModalAceptar');
 const btnModalCancelar = document.getElementById('btnModalCancelar');
 
+// Habilitar / Deshabilitar el botón Guardar dinámicamente según los campos
+function validarFormulario() {
+    const nombreCompleto = nombreInput.value.trim() !== '';
+    const descripcionCompleta = descripcionInput.value.trim() !== '';
+
+    if (btnGuardar) {
+        btnGuardar.disabled = !(nombreCompleto && descripcionCompleta);
+    }
+}
+
+// Escuchar cambios de escritura en tiempo real
+nombreInput.addEventListener('input', validarFormulario);
+descripcionInput.addEventListener('input', validarFormulario);
+
 // Mostrar alerta del sistema
 function mostrarAlertaSistema(mensaje) {
     if (alertSistema && alertTexto) {
@@ -34,7 +48,7 @@ function ocultarAlertaSistema() {
     }
 }
 
-// Ventana flotante de confirmación personalizada (Modal bonito)
+// Ventana flotante de confirmación personalizada (Modal elegante)
 function solicitarConfirmacion(mensaje, callbackAceptar) {
     if (modalConfirmacion && modalMensaje) {
         modalMensaje.textContent = mensaje;
@@ -48,7 +62,7 @@ function solicitarConfirmacion(mensaje, callbackAceptar) {
             modalConfirmacion.classList.add('d-none');
         };
     } else {
-        // Fallback por si el modal HTML no está en index.html
+        // Fallback por si el modal HTML no está en el DOM
         if (confirm(mensaje)) {
             callbackAceptar();
         }
@@ -138,13 +152,13 @@ window.editarRol = function(id) {
         idRolesInput.value = rol.idRoles;
         nombreInput.value = rol.Nombre;
         descripcionInput.value = rol.Descripcion;
+        validarFormulario();
         if (btnGuardar) btnGuardar.textContent = 'Actualizar';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-}
+};
 
 window.eliminarRol = function(id) {
-    // Aquí se llama a la ventana flotante elegante en lugar del alert feo del navegador
     solicitarConfirmacion("¿Estás seguro de que deseas eliminar este rol?", async () => {
         try {
             const response = await fetch(`/api/roles/${id}`, { method: 'DELETE' });
@@ -167,8 +181,11 @@ btnLimpiar.addEventListener('click', limpiarFormulario);
 function limpiarFormulario() {
     form.reset();
     idRolesInput.value = '';
+    validarFormulario();
     ocultarAlertaSistema();
     if (btnGuardar) btnGuardar.textContent = 'Guardar';
 }
 
+// Inicialización al cargar la página
 cargarRoles();
+validarFormulario();

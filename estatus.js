@@ -20,14 +20,43 @@ function ocultarAlertaSistema() {
     if (alertSistema) alertSistema.classList.add('d-none');
 }
 
-// El botón Guardar solo se habilita si el nombre tiene texto
+// MODAL PERSONALIZADO (Idéntico al de la foto 2, sin usar el nativo del navegador)
+function solicitarConfirmacion(mensaje, callbackAceptar) {
+    const modal = document.getElementById('modalConfirmacion');
+    const texto = document.getElementById('modalMensaje');
+    const btnAceptar = document.getElementById('btnModalAceptar');
+    const btnCancelarModal = document.getElementById('btnModalCancelar');
+
+    if (modal && texto && btnAceptar && btnCancelarModal) {
+        texto.textContent = mensaje;
+        modal.classList.remove('d-none');
+
+        // Limpiamos eventos anteriores para evitar acumulación
+        const nuevoAceptar = btnAceptar.cloneNode(true);
+        const nuevoCancelar = btnCancelarModal.cloneNode(true);
+        btnAceptar.parentNode.replaceChild(nuevoAceptar, btnAceptar);
+        btnCancelarModal.parentNode.replaceChild(nuevoCancelar, btnCancelarModal);
+
+        document.getElementById('btnModalAceptar').onclick = () => {
+            modal.classList.add('d-none');
+            callbackAceptar();
+        };
+        document.getElementById('btnModalCancelar').onclick = () => {
+            modal.classList.add('d-none');
+        };
+    } else {
+        // Fallback por seguridad extrema si faltara el HTML
+        if (confirm(mensaje)) callbackAceptar();
+    }
+}
+
 function actualizarBotonGuardar() {
+    ocultarAlertaSistema();
     btnRegistrar.disabled = nombreInput.value.trim() === '';
 }
 
 nombreInput.addEventListener('input', actualizarBotonGuardar);
 
-// Cargar listado de estatus
 async function cargarEstatus() {
     try {
         const res = await fetch('/api/estatus-crud');
@@ -49,7 +78,7 @@ function renderTabla(estatusList) {
         const tr = document.createElement('tr');
 
         const tdNombre = document.createElement('td');
-        tdNombre.textContent = e.Estatus;   // textContent evita inyección de HTML
+        tdNombre.textContent = e.Estatus;
 
         const tdAcciones = document.createElement('td');
         tdAcciones.style.textAlign = 'center';
@@ -58,6 +87,7 @@ function renderTabla(estatusList) {
                 <button type="button" class="action-icon" title="Editar">✏️</button>
                 <button type="button" class="action-icon" title="Eliminar">🗑️</button>
             </div>`;
+        
         const [btnEditar, btnEliminar] = tdAcciones.querySelectorAll('button');
         btnEditar.addEventListener('click', () => editarEstatus(e.idEstatus, e.Estatus));
         btnEliminar.addEventListener('click', () => eliminarEstatus(e.idEstatus));
@@ -68,15 +98,17 @@ function renderTabla(estatusList) {
 }
 
 window.editarEstatus = function(id, nombre) {
+    ocultarAlertaSistema();
     idEstatusInput.value = id;
     nombreInput.value = nombre;
+    btnRegistrar.textContent = 'Actualizar';
     actualizarBotonGuardar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// Evento Guardar (Submit del formulario)
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
+    ocultarAlertaSistema();
     
     const id = idEstatusInput.value;
     const nombre = nombreInput.value.trim();
@@ -114,26 +146,27 @@ form.addEventListener('submit', async function(e) {
     }
 });
 
-window.eliminarEstatus = async function(id) {
-    if (confirm("¿Estás seguro de eliminar este estatus?")) {
+window.eliminarEstatus = function(id) {
+    solicitarConfirmacion("¿Estás seguro de que deseas eliminar este estatus?", async () => {
         try {
             const res = await fetch(`/api/estatus-crud/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 limpiarTodo();
                 await cargarEstatus();
             } else {
-                const err = await res.json();
-                mostrarAlertaSistema(err.error || "No se pudo eliminar.");
+                const err = await res.json().catch(() => ({}));
+                mostrarAlertaSistema(err.error || "No se pudo eliminar el estatus.");
             }
         } catch (error) {
             mostrarAlertaSistema("Error de conexión al eliminar.");
         }
-    }
+    });
 };
 
 function limpiarTodo() {
     form.reset();
     idEstatusInput.value = '';
+    btnRegistrar.textContent = 'Guardar';
     ocultarAlertaSistema();
     actualizarBotonGuardar();
 }
@@ -141,6 +174,5 @@ function limpiarTodo() {
 btnCancelar.addEventListener('click', limpiarTodo);
 btnLimpiar.addEventListener('click', limpiarTodo);
 
-// Inicializar
 cargarEstatus();
 actualizarBotonGuardar();

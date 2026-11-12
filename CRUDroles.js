@@ -147,7 +147,6 @@ app.delete('/api/roles/:id', (req, res) => {
     });
 });
 
-
 /* ================= ROUTES DE ESTATUS ================= */
 app.get('/api/estatus-crud', (req, res) => {
     db.query('SELECT idEstatus, Estatus FROM estatus', (err, results) => {
@@ -198,7 +197,6 @@ app.delete('/api/estatus-crud/:id', (req, res) => {
         res.json({ message: 'Estatus eliminado con éxito' });
     });
 });
-
 
 /* ================= ROUTES DE USUARIOS Y LOGIN ================= */
 app.get('/api/usuarios', (req, res) => {
