@@ -169,25 +169,27 @@ formulario.addEventListener('submit', async (evento) => {
 });
 
 async function eliminarTipo(id) {
-    solicitarConfirmacion('¿Seguro que deseas eliminar este tipo de documento?', async () => {
-        try {
-            const respuesta = await fetch(`/api/tipos-documento/${id}`, {
-                method: 'DELETE'
-            });
+    // CAMBIO: Se usa confirmarModal en lugar de solicitarConfirmacion
+    const confirmado = await confirmarModal('¿Seguro que deseas eliminar este tipo de documento?');
+    if (!confirmado) return;
 
-            if (!respuesta.ok) {
-                const err = await respuesta.json().catch(() => ({}));
-                mostrarAlertaSistema(err.error || 'No se pudo eliminar el tipo de documento.');
-                return;
-            }
+    try {
+        const respuesta = await fetch(`/api/tipos-documento/${id}`, {
+            method: 'DELETE'
+        });
 
-            ocultarAlertaSistema();
-            await cargarTipos();
-        } catch (error) {
-            console.error('Error al eliminar tipo de documento:', error);
-            mostrarAlertaSistema('No se pudo conectar con el servidor.');
+        if (!respuesta.ok) {
+            const err = await respuesta.json().catch(() => ({}));
+            mostrarAlertaSistema(err.error || 'No se pudo eliminar el tipo de documento.');
+            return;
         }
-    });
+
+        ocultarAlertaSistema();
+        await cargarTipos();
+    } catch (error) {
+        console.error('Error al eliminar tipo de documento:', error);
+        mostrarAlertaSistema('No se pudo conectar con el servidor.');
+    }
 }
 
 document.getElementById('btnCancelar').onclick = limpiarFormulario;
