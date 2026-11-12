@@ -21,12 +21,5 @@ document.addEventListener('DOMContentLoaded', () => {
         welcomeSubtitle.textContent = `Bienvenido, ${nombreMostrar}. Selecciona un módulo para comenzar a trabajar.`;
     }
 
-    // 3. Ocultar módulos administrativos si el rol no es Administrador
-    const esAdmin = usuario.NombreRol === 'Administrador' || usuario.rol === 'Administrador';
-    if (!esAdmin) {
-        const elementosAdmin = document.querySelectorAll('.nav-section-admin');
-        elementosAdmin.forEach(el => {
-            el.style.display = 'none';
-        });
-    }
+    // Los candados y el bloqueo de módulos según el rol los maneja permisos.js
 });

@@ -915,3 +915,32 @@ body.login-body {
     margin-bottom: 12px;
     text-align: center;
 }
+
+/* ==========================================
+   MÓDULOS BLOQUEADOS POR ROL (permisos.js)
+========================================== */
+a.bloqueado {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Que no cambien de color al pasar el mouse */
+.nav-sublist li a.bloqueado:hover {
+    color: #333;
+    font-weight: normal;
+}
+
+.module-links li a.bloqueado:hover {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* En las tarjetas el candado reemplaza la flecha */
+a.bloqueado i.fa-chevron-right {
+    display: none;
+}
+
+.candado {
+    margin-left: 8px;
+    font-size: 0.85em;
+}

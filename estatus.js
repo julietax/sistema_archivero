@@ -1,7 +1,6 @@
 const form = document.getElementById('estatusForm');
 const estatusTableBody = document.getElementById('estatusTableBody');
 const nombreInput = document.getElementById('nombreEstatus');
-const descripcionInput = document.getElementById('descripcionEstatus');
 const idEstatusInput = document.getElementById('idEstatus');
 const btnCancelar = document.getElementById('btnCancelar');
 const btnLimpiar = document.getElementById('btnLimpiar');
@@ -21,14 +20,12 @@ function ocultarAlertaSistema() {
     if (alertSistema) alertSistema.classList.add('d-none');
 }
 
-// Habilitar o deshabilitar botón según los campos
+// El botón Guardar solo se habilita si el nombre tiene texto
 function actualizarBotonGuardar() {
-    const camposCompletos = nombreInput.value.trim() !== '' && descripcionInput.value.trim() !== '';
-    btnRegistrar.disabled = !camposCompletos;
+    btnRegistrar.disabled = nombreInput.value.trim() === '';
 }
 
 nombreInput.addEventListener('input', actualizarBotonGuardar);
-descripcionInput.addEventListener('input', actualizarBotonGuardar);
 
 // Cargar listado de estatus
 async function cargarEstatus() {
@@ -44,30 +41,35 @@ async function cargarEstatus() {
 function renderTabla(estatusList) {
     estatusTableBody.innerHTML = '';
     if (!estatusList || estatusList.length === 0) {
-        estatusTableBody.innerHTML = `<tr><td colspan="3" class="empty-message">No hay estatus registrados</td></tr>`;
+        estatusTableBody.innerHTML = `<tr><td colspan="2" class="empty-message">No hay estatus registrados</td></tr>`;
         return;
     }
 
     estatusList.forEach(e => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${e.Estatus}</td>
-            <td>${e.Descripcion || ''}</td>
-            <td style="text-align: center;">
-                <div class="action-btns" style="justify-content: center;">
-                    <button type="button" class="action-icon" onclick="editarEstatus(${e.idEstatus}, '${e.Estatus}', '${e.Descripcion || ''}')" title="Editar">✏️</button>
-                    <button type="button" class="action-icon" onclick="eliminarEstatus(${e.idEstatus})" title="Eliminar">🗑️</button>
-                </div>
-            </td>
-        `;
+
+        const tdNombre = document.createElement('td');
+        tdNombre.textContent = e.Estatus;   // textContent evita inyección de HTML
+
+        const tdAcciones = document.createElement('td');
+        tdAcciones.style.textAlign = 'center';
+        tdAcciones.innerHTML = `
+            <div class="action-btns" style="justify-content: center;">
+                <button type="button" class="action-icon" title="Editar">✏️</button>
+                <button type="button" class="action-icon" title="Eliminar">🗑️</button>
+            </div>`;
+        const [btnEditar, btnEliminar] = tdAcciones.querySelectorAll('button');
+        btnEditar.addEventListener('click', () => editarEstatus(e.idEstatus, e.Estatus));
+        btnEliminar.addEventListener('click', () => eliminarEstatus(e.idEstatus));
+
+        tr.append(tdNombre, tdAcciones);
         estatusTableBody.appendChild(tr);
     });
 }
 
-window.editarEstatus = function(id, nombre, descripcion) {
+window.editarEstatus = function(id, nombre) {
     idEstatusInput.value = id;
     nombreInput.value = nombre;
-    descripcionInput.value = descripcion;
     actualizarBotonGuardar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -78,20 +80,14 @@ form.addEventListener('submit', async function(e) {
     
     const id = idEstatusInput.value;
     const nombre = nombreInput.value.trim();
-    const descripcion = descripcionInput.value.trim();
 
-    if (!nombre || !descripcion) {
+    if (!nombre) {
         mostrarAlertaSistema("Complete los campos obligatorios.");
         return;
     }
 
     if (nombre.length > 20) {
         mostrarAlertaSistema("El nombre no puede exceder los 20 caracteres.");
-        return;
-    }
-
-    if (descripcion.length > 35) {
-        mostrarAlertaSistema("La descripción no puede exceder los 35 caracteres.");
         return;
     }
 
@@ -102,7 +98,7 @@ form.addEventListener('submit', async function(e) {
         const res = await fetch(url, {
             method: metodo,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, descripcion })
+            body: JSON.stringify({ nombre })
         });
 
         if (res.ok) {
