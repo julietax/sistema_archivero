@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -379,6 +378,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="reportes.js"></script>
 
 </head>
 
@@ -519,9 +519,11 @@
         ? "http://localhost:3000"
         : window.location.origin;
        let documentos = [];
+       // Filtros de la última búsqueda (el reporte los usa para describirse)
+       let filtrosAplicados = { tipo: "", departamento: "", estatus: "" };
        async function cargarDocumentos() {
     try {
-        const respuesta = await fetch("http://localhost:3000/api/documentos-completo");
+        const respuesta = await fetch(`${API_BASE}/api/documentos-completo`);
 
         if (!respuesta.ok) {
             throw new Error("Error al consultar los documentos");
@@ -552,7 +554,7 @@
         const departamento = document.getElementById("departamento");
         async function cargarDepartamentos() {
     try {
-        const respuesta = await fetch("http://localhost:3000/api/departamentos");
+        const respuesta = await fetch(`${API_BASE}/api/departamentos`);
 
         if (!respuesta.ok) {
             throw new Error("Error al cargar departamentos");
@@ -579,7 +581,7 @@
 
 async function cargarTiposDocumento() {
     try {
-        const respuesta = await fetch("http://localhost:3000/api/tipos-documento");
+        const respuesta = await fetch(`${API_BASE}/api/tipos-documento`);
 
         if (!respuesta.ok) {
             throw new Error("Error al cargar tipos de documento");
@@ -683,6 +685,13 @@ function buscarDocumentos() {
         );
     });
 
+    // Se guardan los filtros usados para describirlos en el reporte
+    filtrosAplicados = {
+        tipo: tipo.value.trim(),
+        departamento: departamento.value.trim(),
+        estatus: estatus.value.trim()
+    };
+
     mostrarDocumentos(resultados);
 }
 
@@ -695,35 +704,23 @@ function buscarDocumentos() {
                 tipo.value = "";
                 departamento.value = "";
                 estatus.value = "";
+                filtrosAplicados = { tipo: "", departamento: "", estatus: "" };
                 mostrarDocumentos(documentos);
             });
 
-document.getElementById("btnReporte").addEventListener("click", () => {
+// Texto que describe los filtros aplicados en el reporte
+function descripcionReporteDocumentos() {
+    const partes = [];
+    if (filtrosAplicados.tipo) partes.push(`de tipo ${filtrosAplicados.tipo}`);
+    if (filtrosAplicados.departamento) partes.push(`del departamento ${filtrosAplicados.departamento}`);
+    if (filtrosAplicados.estatus) partes.push(`con estatus ${filtrosAplicados.estatus.toLowerCase()}`);
+
+    if (partes.length === 0) return "Reporte de todos los documentos.";
+    return ["Reporte de documentos", ...partes].join(" ") + ".";
+}
+
+document.getElementById("btnReporte").addEventListener("click", async () => {
     try {
-        if (!window.jspdf) {
-            alert("No se pudo cargar jsPDF. Comprueba tu conexión a internet y vuelve a intentarlo.");
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-        if (typeof pdf.autoTable !== "function") {
-            alert("No se pudo cargar la herramienta de tablas del PDF. Comprueba tu conexión a internet.");
-            return;
-        }
-
-        const fecha = new Date();
-        const fechaTexto = fecha.toLocaleString("es-MX", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false
-        });
-
         // Toma únicamente los documentos que aparecen actualmente en la tabla.
         const filas = Array.from(lista.querySelectorAll("tr"))
             .filter(fila => fila.querySelectorAll("td").length === 6)
@@ -746,114 +743,24 @@ document.getElementById("btnReporte").addEventListener("click", () => {
                 ];
             });
 
-        function dibujarReporte(conLogo) {
-            // Encabezado institucional compacto, como en el prototipo.
-          
-if (conLogo) {
-    pdf.addImage(
-        conLogo,
-        "PNG",
-        14,
-        9,
-        27,
-        27
-    );
-}
+        // El PDF usa el mismo generador que el reporte de trabajadores (reportes.js)
+        await generarPDFReporte({
+            descripcion: descripcionReporteDocumentos(),
+            columnas: [
+                { titulo: "Tipo de documento", centro: true },
+                { titulo: "Trabajador" },
+                { titulo: "Num. de Trabajador", centro: true },
+                { titulo: "Departamento" },
+                { titulo: "Estatus", centro: true }
+            ],
+            filas,
+            archivo: "reporte_documentos.pdf"
+        });
+    } catch (error) {
+        alert("Error al generar el reporte: " + error.message);
+    }
+});
 
-            pdf.setTextColor(0, 0, 0);
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(12);
-            pdf.text("ARCHIVO DE CONCENTRACIÓN", 43, 17);
-
-            pdf.setFont("helvetica", "normal");
-            pdf.setFontSize(9);
-            pdf.text("Instituto Tecnológico de Saltillo", 43, 23);
-
-            pdf.setFontSize(8);
-            pdf.text("Fecha: " + fechaTexto, 196, 29, { align: "right" });
-
-            pdf.setDrawColor(125, 125, 125);
-            pdf.setLineWidth(0.25);
-            pdf.line(14, 38, 196, 38);
-
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(11);
-            const titulo = pdf.splitTextToSize(
-                "Reporte de documentos consultados.",
-                165
-            );
-            pdf.text(titulo, 19, 51);
-
-            const yTotal = 51 + (titulo.length * 5) + 9;
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(9);
-            pdf.text("Total de resultados: " + filas.length, 19, yTotal);
-
-            pdf.autoTable({
-                startY: yTotal + 8,
-                margin: { left: 16, right: 16 },
-                head: [[
-                    "Tipo de\ndocumento",
-                    "Trabajador",
-                    "Num. de\nTrabajador",
-                    "Departamento",
-                    "Estatus"
-                ]],
-                body: filas,
-                theme: "plain",
-                styles: {
-                    font: "helvetica",
-                    fontSize: 8,
-                    textColor: [0, 0, 0],
-                    cellPadding: 2.5,
-                    overflow: "linebreak",
-                    lineWidth: 0.12,
-                    lineColor: [210, 210, 210],
-                    valign: "middle",
-                    minCellHeight: 10
-                },
-                headStyles: {
-                    fontStyle: "bold",
-                    fontSize: 8,
-                    halign: "center",
-                    valign: "middle",
-                    lineWidth: 0.12,
-                    lineColor: [210, 210, 210]
-                },
-                columnStyles: {
-                    0: { cellWidth: 50, halign: "center" },
-                    1: { cellWidth: 31 },
-                    2: { cellWidth: 27, halign: "center" },
-                    3: { cellWidth: 39 },
-                    4: { cellWidth: 23, halign: "center" }
-                },
-                didDrawPage: function () {
-                    // Mantener el reporte sin colores de fondo fuertes.
-                }
-            });
-
-            pdf.save("reporte_documentos.pdf");
-        }
-
-const logo = new Image();
-
-logo.onload = () => {
-    dibujarReporte(logo);
-};
-
-logo.onerror = () => {
-    alert("No se pudo cargar el logo.");
-};
-
-logo.src = "logo.png";
-
-        
-} catch (error) {
-    alert("Error al generar el reporte: " + error.message);
-}
-}
-
-);
 cargarDocumentos();
 cargarDepartamentos();
 cargarTiposDocumento();

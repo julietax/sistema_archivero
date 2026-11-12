@@ -10,6 +10,16 @@ const fs = require('fs');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// SEGURIDAD: evita que se descargue el código del servidor desde el navegador
+// (debe ir ANTES de express.static)
+app.use((req, res, next) => {
+    if (/^\/(CRUDroles\.js|server\.js|package(-lock)?\.json|\.env|\.git|node_modules)/i.test(req.path)) {
+        return res.status(404).end();
+    }
+    next();
+});
+
 app.use(express.static('.'));
 
 // ---- Archivos de documentos (PDF o fotos) ----
@@ -50,10 +60,13 @@ function subirArchivo(req, res, next) {
 }
 
 // 2. Conexión a la Base de Datos en Railway (Producción / Azure)
+if (!process.env.MYSQLPASSWORD) {
+    console.error('FALTA la variable de entorno MYSQLPASSWORD: el servidor no podrá conectarse a la base de datos.');
+}
 const db = mysql.createConnection({
     host: process.env.MYSQLHOST || 'turntable.proxy.rlwy.net',
     user: process.env.MYSQLUSER || 'root',        
-    password: process.env.MYSQLPASSWORD || 'eIkTCmpephCZNskguxOjSKVZBHZStKUZ', 
+    password: process.env.MYSQLPASSWORD,   // se define en Azure > Variables de entorno
     database: process.env.MYSQLDATABASE || 'railway',
     port: process.env.MYSQLPORT || 21654
 });
@@ -455,7 +468,8 @@ app.get('/api/departamentos', (req, res) => {
 });
 
 app.post('/api/departamentos', (req, res) => {
-    const { nombre } = req.body;
+    const nombre = (req.body.nombre || '').trim();
+    if (!nombre) return res.status(400).json({ error: 'El nombre del departamento es obligatorio.' });
     const checkQuery = 'SELECT idDepartamentos FROM departamentos WHERE Nombre = ?';
     db.query(checkQuery, [nombre], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -470,7 +484,8 @@ app.post('/api/departamentos', (req, res) => {
 
 app.put('/api/departamentos/:id', (req, res) => {
     const id = req.params.id;
-    const { nombre } = req.body;
+    const nombre = (req.body.nombre || '').trim();
+    if (!nombre) return res.status(400).json({ error: 'El nombre del departamento es obligatorio.' });
     const checkQuery = 'SELECT idDepartamentos FROM departamentos WHERE Nombre = ? AND idDepartamentos <> ?';
     db.query(checkQuery, [nombre, id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -568,6 +583,19 @@ app.delete('/api/trabajadores/:id', (req, res) => {
 /* ================= ROUTES PARA REPORTE DE TRABAJADORES ================= */
 app.get('/api/trabajadores/reporte', (req, res) => {
     const { desde, hasta, estatus, departamento } = req.query;
+
+    // Validar fechas: formato correcto, no futuras y desde <= hasta
+    const hoy = new Date().toISOString().slice(0, 10);
+    const formatoFecha = /^\d{4}-\d{2}-\d{2}$/;
+    if ((desde && !formatoFecha.test(desde)) || (hasta && !formatoFecha.test(hasta))) {
+        return res.status(400).json({ error: 'Formato de fecha no válido.' });
+    }
+    if ((desde && desde > hoy) || (hasta && hasta > hoy)) {
+        return res.status(400).json({ error: 'No se pueden usar fechas futuras en el periodo de ingreso.' });
+    }
+    if (desde && hasta && desde > hasta) {
+        return res.status(400).json({ error: 'La fecha inicial no puede ser mayor que la fecha final.' });
+    }
     let query = `
         SELECT t.idTrabajadores AS id, t.Nombre AS nombre, t.Apellido_paterno AS apellidoPaterno, 
                t.Apellido_materno AS apellidoMaterno, t.No_trabajador AS numero, 

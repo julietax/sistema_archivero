@@ -1,7 +1,7 @@
-
 const API = '/api/departamentos';
 
 const inputNombre = document.getElementById('nombre');
+const btnGuardar = document.getElementById('btnGuardar');
 const tabla = document.getElementById('tablaDepartamentos');
 const titulo = document.getElementById('tituloFormulario');
 const modal = document.getElementById('modal');
@@ -28,6 +28,12 @@ function mostrarModal(tituloTxt, texto, { confirmar = false } = {}) {
     modalAceptar.onclick = () => cerrar(true);
     modalCancelar.onclick = () => cerrar(false);
   });
+}
+
+/* ---------- Botón Guardar ---------- */
+// El botón solo se habilita si el nombre tiene texto (sin contar espacios)
+function actualizarBotonGuardar() {
+  btnGuardar.disabled = inputNombre.value.trim() === '';
 }
 
 /* ---------- Listado ---------- */
@@ -67,7 +73,7 @@ async function cargarDepartamentos() {
 /* ---------- Formulario ---------- */
 function limpiar() {
   inputNombre.value = '';
-  inputNombre.style.borderColor = '';
+  actualizarBotonGuardar();   // con el campo vacío, Guardar se deshabilita
   inputNombre.focus();
 }
 function cancelar() {
@@ -79,18 +85,17 @@ function editar(d) {
   editandoId = d.id;
   titulo.textContent = 'Editar departamento';
   inputNombre.value = d.nombre;
+  actualizarBotonGuardar();   // al editar ya hay texto, Guardar se habilita
   inputNombre.focus();
 }
 
 async function guardar() {
+  // Si el botón está deshabilitado (campo vacío) no se hace nada.
+  // También cubre cuando se presiona Enter con el campo vacío.
+  if (btnGuardar.disabled) return;
+
   const nombre = inputNombre.value.trim();
-  if (!nombre) {
-    inputNombre.style.borderColor = '#d9534f';
-    await mostrarModal('Falta el nombre', 'Escribe el nombre del departamento para guardarlo.');
-    inputNombre.focus();
-    return;
-  }
-  inputNombre.style.borderColor = '';
+  if (!nombre) return;
 
   try {
     const res = await fetch(editandoId ? `${API}/${editandoId}` : API, {
@@ -98,16 +103,15 @@ async function guardar() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre })
     });
+    // Error del servidor con mensaje (por ejemplo, nombre duplicado)
     if (res.status === 400) {
       const dato = await res.json();
       await mostrarModal('No se pudo guardar', dato.error);
       return;
     }
     if (!res.ok) throw new Error();
-    const fueEdicion = !!editandoId;
     cancelar();
     await cargarDepartamentos();
-    mostrarModal('Listo', fueEdicion ? 'Departamento actualizado.' : 'Departamento guardado.');
   } catch {
     mostrarModal('No se pudo guardar', 'Ocurrió un error al guardar. Inténtalo de nuevo.');
   }
@@ -131,9 +135,13 @@ async function eliminar(d) {
   }
 }
 
-document.getElementById('btnGuardar').onclick = guardar;
+/* ---------- Eventos ---------- */
+btnGuardar.onclick = guardar;
 document.getElementById('btnLimpiar').onclick = limpiar;
 document.getElementById('btnCancelar').onclick = cancelar;
+inputNombre.addEventListener('input', actualizarBotonGuardar);   // revisa cada vez que se escribe
 inputNombre.addEventListener('keydown', e => { if (e.key === 'Enter') guardar(); });
 
+/* ---------- Inicio ---------- */
 cargarDepartamentos();
+actualizarBotonGuardar();   // Guardar arranca deshabilitado
