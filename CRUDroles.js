@@ -12,7 +12,6 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // SEGURIDAD: evita que se descargue el código del servidor desde el navegador
-// (debe ir ANTES de express.static)
 app.use((req, res, next) => {
     if (/^\/(CRUDroles\.js|server\.js|package(-lock)?\.json|\.env|\.git|node_modules)/i.test(req.path)) {
         return res.status(404).end();
@@ -20,8 +19,13 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static('.'));
+// 2. Ruta raíz obligatoria para forzar el login
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
 
+// 3. Archivos estáticos del proyecto (con index: false para que no cargue index.html por defecto)
+app.use(express.static('.', { index: false }));
 // ---- Archivos de documentos (PDF o fotos) ----
 const carpetaUploads = path.join(__dirname, 'uploads');
 if (!fs.existsSync(carpetaUploads)) fs.mkdirSync(carpetaUploads);
@@ -307,33 +311,34 @@ app.delete('/api/usuarios/:id', (req, res) => {
     });
 });
 
+// Endpoint para validar el inicio de sesión
 app.post('/api/login', (req, res) => {
     const { correo, contrasena } = req.body;
 
-    const query = `
-        SELECT u.idUsuarios, u.Nombre, u.Correo_electronico, r.Nombre AS Rol, e.Estatus AS EstadoEstatus
-        FROM usuarios u
-        JOIN roles r ON u.Roles_idRoles = r.idRoles
-        JOIN estatus e ON u.Estatus_idEstatus = e.idEstatus
-        WHERE u.Correo_electronico = ? AND u.Contrasena = ?
+    const sql = `
+        SELECT u.idUsuarios, u.Nombre, u.Apellido_paterno, u.Correo, r.Nombre AS NombreRol 
+        FROM Usuarios u
+        INNER JOIN Roles r ON u.Roles_idRoles = r.idRoles
+        WHERE u.Correo = ? AND u.Contrasena = ?
     `;
 
-    db.query(query, [correo, contrasena], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+    db.query(sql, [correo, contrasena], (err, results) => {
+        if (err) {
+            console.error("Error en consulta de login:", err);
+            return res.status(500).json({ error: "Error en el servidor al verificar credenciales." });
+        }
+
         if (results.length === 0) {
-            return res.status(401).json({ error: 'Credenciales incorrectas o usuario no encontrado.' });
+            return res.status(401).json({ error: "Correo o contraseña incorrectos." });
         }
 
-        const usuario = results[0];
-
-        if (usuario.EstadoEstatus !== 'Activo') {
-            return res.status(403).json({ error: 'Acceso denegado: Tu cuenta se encuentra inactiva.' });
-        }
-
-        res.json({ message: 'Login exitoso', usuario });
+        // Devuelve los datos del usuario y su rol
+        res.json({
+            mensaje: "Inicio de sesión exitoso",
+            usuario: results[0]
+        });
     });
 });
-
 
 /* ================= ROUTES DE PRÉSTAMOS Y EXPEDIENTES ================= */
 app.get('/api/trabajadores-expedientes', (req, res) => {

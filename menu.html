@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal - Sistema de Gestión Digital de Archivos</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Estilos específicos para el panel de módulos manteniendo el formato del sistema */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .module-card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 22px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid #3498db;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .module-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .module-header i {
+            font-size: 1.4rem;
+            color: #3498db;
+        }
+
+        .module-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            color: #2c3e50;
+        }
+
+        .module-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .module-links li a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background-color: #f8f9fa;
+            color: #333333;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .module-links li a:hover {
+            background-color: #3498db;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle-btn" id="menuToggle" title="Abrir Menú">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar con estantes y cajas separados -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile-placeholder">
+                <span class="user-icon">👤</span>
+                <span id="sidebarUserName">Usuario del Sistema</span>
+            </div>
+            <button class="close-sidebar-btn" id="closeMenu" title="Cerrar Menú">←</button>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section nav-section-admin">
+                <div class="nav-section-title">Roles <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="index.html">Registro de roles</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section nav-section-admin">
+                <div class="nav-section-title">Usuarios <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="usuario.html">Registro de usuarios</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Trabajadores <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="trabajador.html">Registro de trabajadores</a></li>
+                    <li><a href="Reportetrabajador.html">Consulta y reporte</a></li>
+                    <li><a href="Departamentos.html">Departamentos</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Estatus <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="estatus.html">Gestión de estatus</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Documentos <span>▲</span></div>
+                <ul class="nav-sublist">
+                    <li><a href="consultadoc.html">Consulta y reporte</a></li>
+                    <li><a href="documento.html">Registro de documentos</a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos</a></li>
+                    <li><a href="prestamo.html">Préstamos</a></li>
+                    <li><a href="estante.html">Estantes</a></li>
+                    <li><a href="caja.html">Cajas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <!-- Contenedor Principal con las tarjetas corregidas -->
+    <div class="main-container">
+        <h1>Sistema de Gestión Digital de Archivos</h1>
+        <p class="subtitle" id="welcomeSubtitle">Selecciona un módulo para comenzar a trabajar</p>
+
+        <div class="dashboard-grid">
+            <!-- Módulo: Roles -->
+            <div class="module-card nav-section-admin">
+                <div class="module-header">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <h3>Roles</h3>
+                </div>
+                <ul class="module-links">
+                    <li><a href="index.html">Registro de roles <i class="fa-solid fa-chevron-right"></i></a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo: Usuarios -->
+            <div class="module-card nav-section-admin">
+                <div class="module-header">
+                    <i class="fa-solid fa-users"></i>
+                    <h3>Usuarios</h3>
+                </div>
+                <ul class="module-links">
+                    <li><a href="usuario.html">Registro de usuarios <i class="fa-solid fa-chevron-right"></i></a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo: Trabajadores -->
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <h3>Trabajadores</h3>
+                </div>
+                <ul class="module-links">
+                    <li><a href="trabajador.html">Registro de trabajadores <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="Reportetrabajador.html">Consulta y reporte <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="Departamentos.html">Departamentos <i class="fa-solid fa-chevron-right"></i></a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo: Estatus -->
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fa-solid fa-list-check"></i>
+                    <h3>Estatus</h3>
+                </div>
+                <ul class="module-links">
+                    <li><a href="estatus.html">Gestión de estatus <i class="fa-solid fa-chevron-right"></i></a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo: Documentos -->
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <h3>Documentos</h3>
+                </div>
+                <ul class="module-links">
+                    <li><a href="consultadoc.html">Consulta y reporte <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="documento.html">Registro de documentos <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="tiposDocumento.html">Tipos de documentos <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="prestamo.html">Préstamos <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="estante.html">Estantes <i class="fa-solid fa-chevron-right"></i></a></li>
+                    <li><a href="caja.html">Cajas <i class="fa-solid fa-chevron-right"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+    <script src="menu.js"></script>
+</body>
+</html>

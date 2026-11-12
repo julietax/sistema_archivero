@@ -3,39 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Sistema de Gestión Digital de Archivos</title>
+    <title>Sistema de Gestion Digital de Archivos</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- FontAwesome para el ícono del ojito -->
+    <!-- FontAwesome para el ícono del ojo -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="login-body">
 
     <div class="login-card">
+        <!-- Encabezado con logo y títulos alineados -->
         <div class="login-header">
-            <!-- Ajusta la ruta de tu logo si es necesario -->
-            <img src="logo.png" alt="Instituto Tecnológico de Saltillo" class="login-logo" style="width: 60px; height: auto; margin-bottom: 10px;">
-            <h2>Sistema de Gestion Digital de Archivos</h2>
-            <p>Instituto Tecnologico de Saltillo</p>
+            <img src="logo.png" alt="Logo ITS" class="login-logo">
+            <div class="login-titles">
+                <h2>Sistema de Gestion Digital de Archivos</h2>
+                <p>Instituto Tecnologico De Saltillo</p>
+            </div>
         </div>
 
         <form id="loginForm">
+            <!-- Campo Correo Institucional -->
             <div class="form-group">
                 <label for="correo">Correo Institucional</label>
-                <input type="email" id="correo" name="correo" placeholder="ejemplo@its.edu.mx" required autocomplete="email">
+                <input type="email" id="correo" name="correo" required autocomplete="email">
+                <span class="input-helper-text">ejemplo@its.edu.mx</span>
             </div>
 
+            <!-- Campo Contraseña -->
             <div class="form-group">
                 <label for="contrasena">Contraseña</label>
-                <div class="password-wrapper">
+                <div class="password-input-container">
                     <input type="password" id="contrasena" name="contrasena" required autocomplete="current-password">
-                    <i class="fa-solid fa-eye-slash" id="togglePassword" title="Mostrar/Ocultar contraseña" style="cursor: pointer;"></i>
+                    <i class="fa-regular fa-eye" id="togglePassword" title="Mostrar/Ocultar contraseña"></i>
                 </div>
             </div>
 
-            <div id="loginAlert" class="alert-message" style="color: red; font-size: 0.9rem; margin-bottom: 10px; display: none;"></div>
+            <div id="loginAlert" class="login-alert" style="display: none;"></div>
 
-            <button type="submit" class="btn btn-guardar" style="width: 100%; margin-bottom: 10px;">Iniciar Sesión</button>
-            <button type="button" id="btnCancelarLogin" class="btn btn-cancel" style="width: 100%;">Cancelar</button>
+            <!-- Botones -->
+            <button type="submit" class="btn-iniciar-sesion">Iniciar Sesión</button>
+            <button type="button" id="btnCancelarLogin" class="btn-cancelar-login">Cancelar</button>
         </form>
     </div>
 
