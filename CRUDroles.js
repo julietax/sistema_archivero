@@ -312,24 +312,32 @@ app.delete('/api/usuarios/:id', (req, res) => {
 });
 
 // Endpoint para validar el inicio de sesión
+// Solo entran los usuarios dados de alta (estatus Activo)
 app.post('/api/login', (req, res) => {
-    const { correo, contrasena } = req.body;
+    const correo = (req.body.correo || '').trim();
+    const contrasena = req.body.contrasena || '';
 
+    if (!correo || !contrasena) {
+        return res.status(400).json({ error: "Escribe tu correo y tu contraseña." });
+    }
+
+    // BINARY hace que la contraseña distinga mayúsculas y minúsculas
     const sql = `
-        SELECT u.idUsuarios, u.Nombre, u.Apellido_paterno, u.Correo, r.Nombre AS NombreRol 
-        FROM Usuarios u
-        INNER JOIN Roles r ON u.Roles_idRoles = r.idRoles
-        WHERE u.Correo = ? AND u.Contrasena = ?
+        SELECT u.idUsuarios, u.Nombre, u.Apellido_paterno, u.Correo_electronico AS Correo, r.Nombre AS NombreRol
+        FROM usuarios u
+        INNER JOIN roles r ON u.Roles_idRoles = r.idRoles
+        INNER JOIN estatus es ON u.Estatus_idEstatus = es.idEstatus
+        WHERE u.Correo_electronico = ? AND BINARY u.Contrasena = ? AND es.Estatus = ?
     `;
 
-    db.query(sql, [correo, contrasena], (err, results) => {
+    db.query(sql, [correo, contrasena, ESTATUS_ACTIVO], (err, results) => {
         if (err) {
             console.error("Error en consulta de login:", err);
             return res.status(500).json({ error: "Error en el servidor al verificar credenciales." });
         }
 
         if (results.length === 0) {
-            return res.status(401).json({ error: "Correo o contraseña incorrectos." });
+            return res.status(401).json({ error: "Correo o contraseña incorrectos, o el usuario está dado de baja." });
         }
 
         // Devuelve los datos del usuario y su rol
